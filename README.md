@@ -4,6 +4,49 @@ Tests whether an AI investigator ("the detective") can check a datacentre's clai
 
 **The claim:** "In the last 30 days, no single coordinated training run at this site used more than 50,000 GPU-hours."
 
+## In short
+
+Everything here is simulated. A site has 2,000 GPUs, an operator who may be hiding a training run, and an auditor
+with a budget for evidence: the operator's records, third-party records, and instruments the auditor owns (a power
+sensor, a traffic tap, the grid meter, a chip probe). Each site's truth is known, so every method can be scored.
+
+**What was found**
+
+1. **No single instrument is enough.** On 200 generated sites (108 cheating, 92 honest), a rule that reads only the
+   power sensor catches 91 cheaters but accuses 36 honest sites. A rule that reads only the traffic tap accuses 6
+   but catches 41.
+2. **Language models asked to investigate freely mostly won't commit.** On 26 hand-built sites the best one tried
+   (GPT Sol) caught 7 of 14 cheaters, accused none of the 12 honest sites, and gave no verdict on 7. Cheaper models
+   abstained more.
+3. **A script of seven fixed rules did better, until the sites got messy.** It caught 104 of 108 and accused 0 of 92.
+   With mess its author hadn't planned for (resellers, meter swaps, logs that are slightly wrong) it caught 98 and
+   accused 6. Its author knew how the simulator works; the models did not.
+4. **A model improved the script off site.** Shown the script and the practice sites it got wrong, GPT Sol wrote a
+   revision in two calls. On 400 sites neither had seen, the old script caught 181 of 205 and accused 17 of 195;
+   the revision caught 187 and accused 0.
+
+This points to a split: models write and test the rules at a hub, and a fixed script runs on site.
+
+**What it does not show**
+
+- Nothing here ran on a real datacentre. Two of the script's physical tests were tried on public traces from four
+  real GPUs, with a small and partial result (see "Checks before outreach").
+- The unseen sites in point 4 are new draws from the same recipe, not a cheating method held out.
+- Several instrument settings have no source. Changing each in turn does not change the ranking (`sweep.py`,
+  `sweep.png`), but the chip probe's accuracy under disguise is set lower than the two papers on it support.
+- The model results are single runs.
+
+**Reproduce it:** `python reproduce.py` reruns every table that needs no model, in about two minutes.
+
+**Whose work the instruments rest on**
+
+- Power sensor: Kimpson, Baker and Graham, *Detecting AI Training in Datacentre Power*, arXiv:2610.30182.
+- Traffic tap: Sarbakysh and Moskvin, *De-risking Interconnect Limits for AI Verification*, MIRI Technical Governance Team, 2026.
+- Chip probe: Gargiulo and Kulp, arXiv:2609.00309; Rahman and Tajdari, arXiv:2606.19262.
+- Real traces: Hausenloy and Li, Verifier Challenge Traces (CC-BY-4.0).
+
+The rest of this file is the working record, in the order things were built.
+
 ## What gets compared
 
 | Method | What it is |
