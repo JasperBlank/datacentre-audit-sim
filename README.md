@@ -308,7 +308,7 @@ ordinary work, which is the hard case and the reason the grid meter alone doesn'
 
 ## Run it
 
-To rerun every table that needs no model (about three minutes, Python 3.10+, matplotlib optional):
+To rerun every table that needs no model (about two minutes, Python 3.10+, matplotlib optional; the real-trace step runs only if the traces are downloaded):
 
 ```powershell
 python reproduce.py

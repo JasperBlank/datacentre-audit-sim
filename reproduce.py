@@ -1,6 +1,6 @@
 """Reproduce every table that needs no model call.
 
-    python reproduce.py            # about a minute; writes reproduce.log
+    python reproduce.py            # about two minutes; writes reproduce.log
 
 Needs Python 3.10 or later. matplotlib is optional (the sweep's plot); numpy only for the real-trace check, which is
 skipped unless the traces have been downloaded (see README.md).
