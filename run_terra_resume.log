@@ -1,0 +1,109 @@
+﻿Codex CLI 0.171.0, logged in with ChatGPT. API keys are removed for these calls.
+26 cases | provider=codex-cli | model=gpt-6.1-terra
+  H3-big-batch-seed1: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  C1-relabelled-seed1: VIOLATION (truth: VIOLATION), 20 points
+  C2-split-seed1: VIOLATION (truth: VIOLATION), 30 points
+  C3-paused-seed1: UNDETERMINED (truth: VIOLATION), 15 points
+  C4-hidden-cluster-seed1: UNDETERMINED (truth: VIOLATION), 15 points
+  H2-messy-seed1: UNDETERMINED (truth: NO_VIOLATION), 15 points
+  H1-clean-seed1: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  E1-no-line-relabelled-seed1: UNDETERMINED (truth: VIOLATION), 20 points
+  E2-no-line-paused-seed1: VIOLATION (truth: VIOLATION), 21 points
+  E3-internal-batch-seed1: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  H4-three-finetunes-seed1: NO_VIOLATION (truth: NO_VIOLATION), 29 points
+  E4-same-frequency-seed1: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  E5-whole-month-seed1: UNDETERMINED (truth: VIOLATION), 30 points
+  H1-clean-seed2: UNDETERMINED (truth: NO_VIOLATION), 30 points
+  H3-big-batch-seed2: NO_VIOLATION (truth: NO_VIOLATION), 30 points
+  H2-messy-seed2: UNDETERMINED (truth: NO_VIOLATION), 30 points
+  H4-three-finetunes-seed2: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  C1-relabelled-seed2: VIOLATION (truth: VIOLATION), 21 points
+  C3-paused-seed2: UNDETERMINED (truth: VIOLATION), 30 points
+  C2-split-seed2: VIOLATION (truth: VIOLATION), 30 points
+  C4-hidden-cluster-seed2: UNDETERMINED (truth: VIOLATION), 19 points
+  E2-no-line-paused-seed2: UNDETERMINED (truth: VIOLATION), 15 points
+  E3-internal-batch-seed2: NO_VIOLATION (truth: NO_VIOLATION), 20 points
+  E1-no-line-relabelled-seed2: UNDETERMINED (truth: VIOLATION), 27 points
+  E5-whole-month-seed2: UNDETERMINED (truth: VIOLATION), 15 points
+  E4-same-frequency-seed2: NO_VIOLATION (truth: NO_VIOLATION), 30 points
+Model calls this run: 281 | tokens in/out: 6007789/48515
+ChatGPT subscription: no cost estimate. Replies thrown away because the model used a tool: 0
+
+# Simulated datacentre audit: results
+
+Model: gpt-6.1-terra via codex-cli | budget 30 points per case | 26 cases | extended instruments
+
+The claim: no single coordinated training run above 50,000 GPU-hours in 30 days.
+
+## Scorecard
+
+| Method | Cheaters caught | Honest operators wrongly accused | Undetermined | Blocked by safety filter |
+|---|---|---|---|---|
+| Operator's form alone | 0 of 14 | 0 of 12 | 0 | 0 |
+| Fixed checks alone | 10 of 14 | 6 of 12 | 0 | 0 |
+| Detective with the checks | 5 of 14 | 0 of 12 | 12 | 0 |
+
+## Per case
+
+| Case | Truth | Form | Fixed checks | Detective | Confidence | Integrity | Points | Filter rejections |
+|---|---|---|---|---|---|---|---|---|
+| H1-clean-seed1 | clean | clean | clean | clean | 85 | LIMITED | 15 | 0 |
+| H2-messy-seed1 | clean | clean | violation ✗ | undetermined ✗ | 60 | LIMITED | 15 | 0 |
+| H3-big-batch-seed1 | clean | clean | violation ✗ | clean | 82 | LIMITED | 15 | 0 |
+| H4-three-finetunes-seed1 | clean | clean | clean | clean | 82 | LIMITED | 29 | 0 |
+| C1-relabelled-seed1 | violation | clean ✗ | violation | violation | 95 | LIMITED | 20 | 0 |
+| C2-split-seed1 | violation | clean ✗ | clean ✗ | violation | 85 | LIMITED | 30 | 0 |
+| C3-paused-seed1 | violation | clean ✗ | violation | undetermined ✗ | 50 | LIMITED | 15 | 0 |
+| C4-hidden-cluster-seed1 | violation | clean ✗ | violation | undetermined ✗ | 50 | LIMITED | 15 | 0 |
+| E1-no-line-relabelled-seed1 | violation | clean ✗ | violation | undetermined ✗ | 60 | LIMITED | 20 | 0 |
+| E2-no-line-paused-seed1 | violation | clean ✗ | clean ✗ | violation | 82 | LIMITED | 21 | 0 |
+| E3-internal-batch-seed1 | clean | clean | violation ✗ | clean | 85 | LIMITED | 15 | 0 |
+| E4-same-frequency-seed1 | clean | clean | clean | clean | 85 | LIMITED | 15 | 0 |
+| E5-whole-month-seed1 | violation | clean ✗ | violation | undetermined ✗ | 60 | LIMITED | 30 | 0 |
+| H1-clean-seed2 | clean | clean | clean | undetermined ✗ | 60 | LIMITED | 30 | 0 |
+| H2-messy-seed2 | clean | clean | violation ✗ | undetermined ✗ | 50 | LIMITED | 30 | 0 |
+| H3-big-batch-seed2 | clean | clean | violation ✗ | clean | 85 | LIMITED | 30 | 0 |
+| H4-three-finetunes-seed2 | clean | clean | clean | clean | 85 | LIMITED | 15 | 0 |
+| C1-relabelled-seed2 | violation | clean ✗ | violation | violation | 85 | LIMITED | 21 | 0 |
+| C2-split-seed2 | violation | clean ✗ | clean ✗ | violation | 85 | LIMITED | 30 | 0 |
+| C3-paused-seed2 | violation | clean ✗ | violation | undetermined ✗ | 60 | LIMITED | 30 | 0 |
+| C4-hidden-cluster-seed2 | violation | clean ✗ | violation | undetermined ✗ | 65 | LIMITED | 19 | 0 |
+| E1-no-line-relabelled-seed2 | violation | clean ✗ | violation | undetermined ✗ | 70 | LIMITED | 27 | 0 |
+| E2-no-line-paused-seed2 | violation | clean ✗ | clean ✗ | undetermined ✗ | 50 | LIMITED | 15 | 0 |
+| E3-internal-batch-seed2 | clean | clean | violation ✗ | clean | 90 | LIMITED | 20 | 0 |
+| E4-same-frequency-seed2 | clean | clean | clean | clean | 82 | LIMITED | 30 | 0 |
+| E5-whole-month-seed2 | violation | clean ✗ | violation | undetermined ✗ | 70 | LIMITED | 15 | 0 |
+
+✗ marks a wrong, undetermined or blocked answer.
+
+## What each case was
+
+- **H1-clean-seed1:** Honest. Inference plus small declared fine-tunes. Detective's finding: The balance of evidence favors no coordinated training run exceeding 50,000 GPU-hours.
+- **H2-messy-seed1:** Honest but messy: three days of scheduler logs lost, one customer paying late. Detective's finding: The available evidence does not establish whether any coordinated training run exceeded 50,000 GPU-hours.
+- **H3-big-batch-seed1:** Honest. A large batch inference job with flat power, results delivered in one transfer at the end. Detective's finding: The balance of evidence favors the large allocation being batch inference; no over-threshold training run was established.
+- **H4-three-finetunes-seed1:** Honest. Three separate customers fine-tune, each under the limit; together they exceed it. Detective's finding: The evidence favors no coordinated training run above 50,000 GPU-hours.
+- **C1-relabelled-seed1:** Cheating. One training run declared as internal batch inference, still running in the audit window. Detective's finding: The evidence indicates bt-0460 was a coordinated training run exceeding 50,000 GPU-hours.
+- **C2-split-seed1:** Cheating. One run declared as six fine-tunes for six shell customers, all paid from the operator's parent. Detective's finding: The evidence favors a coordinated fine-tuning run exceeding 50,000 GPU-hours, divided among six recorded allocations.
+- **C3-paused-seed1:** Cheating. A run that ended before the audit window and was left out of the logs. Detective's finding: The evidence does not settle whether one coordinated training run exceeded 50,000 GPU-hours.
+- **C4-hidden-cluster-seed1:** Cheating. A third cluster missing from the system list; its power feed is declared as cooling and storage. Detective's finding: A possible unlisted workload on F3 could not be characterized or ruled out.
+- **E1-no-line-relabelled-seed1:** Cheating. Training declared as internal batch inference, with the power line suppressed, still running in the audit window. Detective's finding: A 184,800 GPU-hour internal job may have been training, but its workload cannot be classified reliably enough to decide the claim.
+- **E2-no-line-paused-seed1:** Cheating. Training declared as a customer's batch job, power line suppressed, finished before the audit window, junk data sent out to mimic results. The customer is paid for by the operator's parent. Detective's finding: The evidence favors one training run exceeding 50,000 GPU-hours during the 700-GPU allocation on days 7–18.
+- **E3-internal-batch-seed1:** Honest twin of E1. A real internal batch inference job; nothing goes out because the results stay on site. Detective's finding: The evidence favors inference for the large allocation; no training run above 50,000 GPU-hours was established.
+- **E4-same-frequency-seed1:** Honest. Two separate customers fine-tune at the same time with the same power-line frequency; each is under the limit, together they exceed it. Detective's finding: The evidence favors two separate fine-tuning runs, each below 50,000 GPU-hours.
+- **E5-whole-month-seed1:** Cheating. An undeclared run on 250 GPUs for the whole 30 days, so no day is quiet enough to compare with. Detective's finding: Cluster B showed substantial training-like activity, but no single run was established above 50,000 GPU-hours.
+- **H1-clean-seed2:** Honest. Inference plus small declared fine-tunes. Detective's finding: The evidence does not establish whether any coordinated training run exceeded 50,000 GPU-hours.
+- **H2-messy-seed2:** Honest but messy: three days of scheduler logs lost, one customer paying late. Detective's finding: The available evidence does not establish whether any coordinated training run exceeded 50,000 GPU-hours.
+- **H3-big-batch-seed2:** Honest. A large batch inference job with flat power, results delivered in one transfer at the end. Detective's finding: No coordinated training run above 50,000 GPU-hours was established; the large recorded job is more likely batch inference.
+- **H4-three-finetunes-seed2:** Honest. Three separate customers fine-tune, each under the limit; together they exceed it. Detective's finding: The evidence favors three separate fine-tuning runs, each below 50,000 GPU-hours.
+- **C1-relabelled-seed2:** Cheating. One training run declared as internal batch inference, still running in the audit window. Detective's finding: The evidence favors one coordinated training run of approximately 151,200 GPU-hours on cluster A.
+- **C2-split-seed2:** Cheating. One run declared as six fine-tunes for six shell customers, all paid from the operator's parent. Detective's finding: The balance of evidence indicates a coordinated fine-tuning run exceeding 50,000 GPU-hours.
+- **C3-paused-seed2:** Cheating. A run that ended before the audit window and was left out of the logs. Detective's finding: Substantial unlogged GPU activity was detected, but its allocation to a single training run and total GPU-hours remain unestablished.
+- **C4-hidden-cluster-seed2:** Cheating. A third cluster missing from the system list; its power feed is declared as cooling and storage. Detective's finding: The evidence does not establish whether an unlisted coordinated training run exceeded 50,000 GPU-hours.
+- **E1-no-line-relabelled-seed2:** Cheating. Training declared as internal batch inference, with the power line suppressed, still running in the audit window. Detective's finding: A large allocation may have contained training, but the evidence does not establish that one coordinated run exceeded 50,000 GPU-hours.
+- **E2-no-line-paused-seed2:** Cheating. Training declared as a customer's batch job, power line suppressed, finished before the audit window, junk data sent out to mimic results. The customer is paid for by the operator's parent. Detective's finding: A 201,600 GPU-hour batch-labelled job may have been training, but its workload could not be determined.
+- **E3-internal-batch-seed2:** Honest twin of E1. A real internal batch inference job; nothing goes out because the results stay on site. Detective's finding: The evidence favors batch inference for the large F1 workload; no training run above 50,000 GPU-hours was established.
+- **E4-same-frequency-seed2:** Honest. Two separate customers fine-tune at the same time with the same power-line frequency; each is under the limit, together they exceed it. Detective's finding: The evidence favors separate fine-tuning runs, neither exceeding 50,000 GPU-hours.
+- **E5-whole-month-seed2:** Cheating. An undeclared run on 250 GPUs for the whole 30 days, so no day is quiet enough to compare with. Detective's finding: Substantial unrecorded training activity is likely on cluster B, but no single run above 50,000 GPU-hours was established.
+
+Full transcripts are in the `cases` folder next to this file.
+

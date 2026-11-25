@@ -1,0 +1,407 @@
+<title>Audit Evidence Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working diagram (sources, channels, readers) under a world switch and a case strip; the 13-case grid and the findings follow. */
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --fg: #151a21; --muted: #586271; --line: #d3d9e1; --accent: #1f4fd8; --accent-fg: #ffffff;
+  --t: #0b8259; --q: #a86200; --b: #8792a2; --o: #c2264b; --s: #a9b2be;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1318; --panel: #171c24; --fg: #e6eaf0; --muted: #99a4b4; --line: #2b333f; --accent: #86a8ff; --accent-fg: #0f1318;
+  --t: #3fcf9a; --q: #f0b04a; --b: #6f7a8a; --o: #ff6f8e; --s: #556070; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1318; --panel: #171c24; --fg: #e6eaf0; --muted: #99a4b4; --line: #2b333f; --accent: #86a8ff; --accent-fg: #0f1318;
+  --t: #3fcf9a; --q: #f0b04a; --b: #6f7a8a; --o: #ff6f8e; --s: #556070; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--sans); }
+.page { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 26px; line-height: 1.2; font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 17px; font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+.lede { color: var(--muted); }
+header, section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.claim { font-family: var(--mono); font-size: 13px; border-left: 3px solid var(--accent); padding-left: 12px; max-width: 72ch; }
+
+.worlds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+.worlds button { text-align: left; font: 14px/1.4 var(--sans); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.worlds button b { font-weight: 600; }
+.worlds button span { color: var(--muted); font-size: 13px; }
+.worlds button .n { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
+.worlds button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cases { display: flex; flex-wrap: wrap; gap: 6px; }
+.cases button { font: 500 13px var(--mono); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 4px; padding: 5px 9px; cursor: pointer; }
+.cases button .k { color: var(--muted); font-family: var(--sans); font-weight: 400; margin-left: 6px; }
+.cases button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.cases button[aria-pressed="true"] .k { color: var(--accent-fg); }
+button:focus-visible, .grid tbody tr:focus-visible, .reader:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.casehead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.tag { font: 500 12px var(--sans); letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; border: 1px solid currentColor; }
+.tag.cheat { color: var(--o); } .tag.honest { color: var(--t); }
+
+.scroll { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+figcaption { color: var(--muted); font-size: 13px; max-width: 80ch; }
+svg.flow { display: block; width: 100%; min-width: 900px; height: auto; font-family: var(--sans); }
+.flow .box { fill: var(--panel); stroke: var(--line); }
+.flow .src { fill: var(--bg); stroke: var(--line); }
+.flow text { fill: var(--fg); }
+.flow .grp { fill: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.flow .nm { font-size: 12.5px; font-weight: 600; }
+.flow .nt { font-size: 11.5px; fill: var(--muted); }
+.flow .gl { font-size: 12px; font-weight: 600; fill: var(--panel); text-anchor: middle; }
+.flow path { fill: none; }
+.flow .T { stroke: var(--t); } .flow .Q { stroke: var(--q); } .flow .B { stroke: var(--b); } .flow .O { stroke: var(--o); } .flow .S { stroke: var(--s); }
+.flow circle.T { fill: var(--t); } .flow circle.Q { fill: var(--q); } .flow circle.B { fill: var(--b); } .flow circle.O { fill: var(--o); }
+.flow circle.S { fill: var(--panel); stroke-dasharray: 2 2; }
+.flow .S.ln { stroke-dasharray: 2 5; }
+.flow .rl { transition: opacity .15s; }
+.flow:has(.reader:hover) .rl, .flow:has(.reader:focus) .rl { opacity: .07; }
+.flow:has(.reader[data-r="checks"]:hover) .rl[data-r="checks"], .flow:has(.reader[data-r="rule"]:hover) .rl[data-r="rule"],
+.flow:has(.reader[data-r="tap"]:hover) .rl[data-r="tap"], .flow:has(.reader[data-r="det"]:hover) .rl[data-r="det"],
+.flow:has(.reader[data-r="checks"]:focus) .rl[data-r="checks"], .flow:has(.reader[data-r="rule"]:focus) .rl[data-r="rule"],
+.flow:has(.reader[data-r="tap"]:focus) .rl[data-r="tap"], .flow:has(.reader[data-r="det"]:focus) .rl[data-r="det"] { opacity: .9; }
+.flow .ok { fill: var(--t); font-weight: 600; } .flow .bad { fill: var(--o); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .flow .rl { transition: none; } }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); padding: 0; margin: 0; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.dot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%;
+  font: 600 11px var(--sans); color: var(--panel); flex: none; }
+.dot.T { background: var(--t); } .dot.Q { background: var(--q); } .dot.B { background: var(--b); } .dot.O { background: var(--o); }
+.dot.S { background: transparent; border: 1px dashed var(--s); color: var(--muted); }
+
+.readers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.readers div { min-width: 0; border-top: 2px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.readers h3 { font-size: 14px; font-weight: 600; margin: 0; }
+.readers .v { font-size: 13px; font-weight: 600; } .readers .v.ok { color: var(--t); } .readers .v.bad { color: var(--o); } .readers .v.none { color: var(--muted); }
+.readers p { font-size: 14px; }
+
+table.grid { border-collapse: collapse; font-size: 13px; width: 100%; min-width: 900px; }
+.grid th, .grid td { padding: 6px 5px; text-align: center; border-bottom: 1px solid var(--line); }
+.grid thead th { font-weight: 500; color: var(--muted); font-size: 11.5px; vertical-align: bottom; line-height: 1.25; }
+.grid thead .band th { text-transform: uppercase; letter-spacing: .06em; font-size: 10.5px; border-bottom: 0; padding-bottom: 0; }
+.grid th.l, .grid td.l { text-align: left; }
+.grid td.c { font-family: var(--mono); font-weight: 500; white-space: nowrap; }
+.grid .sep { border-left: 1px solid var(--line); }
+.grid tbody tr { cursor: pointer; }
+.grid tbody tr:hover { background: var(--bg); }
+.grid tbody tr[aria-selected="true"] { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent); }
+.grid tbody tr:last-child td { border-bottom: 0; }
+.grid .ok { color: var(--t); font-weight: 600; } .grid .bad { color: var(--o); font-weight: 600; } .grid .none { color: var(--muted); }
+
+.findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px 28px; padding: 0; margin: 0; list-style: none; }
+.findings li { min-width: 0; }
+.findings b { display: block; font-weight: 600; }
+.foot { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="page">
+  <header>
+    <h1>Audit Evidence Flow</h1>
+    <p class="lede">How the facts about a simulated datacentre reach each method that judges the operator's claim, case by case, under three sets of instruments. Seed 0 of the simulator.</p>
+    <p class="claim">Claim under audit: no single coordinated training run above 50,000 GPU-hours in the last 30 days.</p>
+  </header>
+
+  <section>
+    <h2>Instruments</h2>
+    <div class="worlds" id="worlds" role="group" aria-label="Choose the instruments"></div>
+  </section>
+
+  <section>
+    <div class="cases" id="cases" role="group" aria-label="Choose a case"></div>
+    <div class="casehead"><h2 id="ctitle"></h2><span class="tag" id="ctag"></span></div>
+    <figure>
+      <div class="scroll" id="flow"></div>
+      <figcaption id="cap"></figcaption>
+    </figure>
+    <ul class="legend" id="legend"></ul>
+    <div class="readers" id="readers"></div>
+  </section>
+
+  <section>
+    <h2>All 13 cases</h2>
+    <p class="lede">Each cell is what one channel carries in one case. Select a row to draw it above.</p>
+    <div class="scroll"><table class="grid" id="grid"></table></div>
+  </section>
+
+  <section>
+    <h2 id="ftitle"></h2>
+    <ul class="findings" id="findings"></ul>
+  </section>
+
+  <p class="foot">The marks are a reading of the simulator's code and of what each channel prints for seed 0, not a measured result. The verdicts of the fixed checks and the two fixed rules are computed. The detective (Sonnet 5.5) was run only with the original instruments and only on H1 to C4. Several numbers behind the realistic and extended instruments are choices without a source; the README lists them.</p>
+</div>
+
+<script>
+const ST = { T: ['Shows what happened', '●', 'true, and enough to see the real job'],
+             Q: ['Raises a question', '?', 'true and unusual, but fits an honest and a dishonest account'],
+             B: ['Nothing unusual', '·', 'true and unremarkable'],
+             O: ['Faked by the operator', '✕', 'edited, staged or a cover story'],
+             S: ['Nothing arrives', '○', 'the trace is suppressed or out of the channel\'s reach'] };
+// key, name in the diagram, short name in the grid, group
+const C8 = [['sys', 'Site list', 'Site list', 0], ['log', 'Job log', 'Job log', 0], ['staff', 'Staff answers', 'Staff', 0], ['sw', 'Traffic counters (operator\'s)', 'Coun-ters', 0],
+            ['en', 'Grid energy per day', 'Energy', 1], ['inv', 'Chip shipments', 'Ship-ments', 1], ['out', 'Outbound traffic', 'Out-bound', 1], ['bank', 'Bank payments', 'Bank', 1]];
+const SPEC = ['spec', 'Power sensor', 'Sensor', 2];
+const WORLDS = {
+  ideal: { name: 'Original', sub: 'A line means training and gives a GPU count. The probe reads memory and identifies the run.',
+           ch: [...C8, SPEC, ['probe', 'Memory probe (days 26 to 30)', 'Probe', 2]], readers: ['checks', 'rule', 'det'] },
+  real:  { name: 'Realistic', sub: 'A line means "something periodic". The probe is a guess per chip, with no run identity.',
+           ch: [...C8, SPEC, ['probe', 'Cable probe (days 26 to 30)', 'Probe', 2]], readers: ['checks', 'rule'] },
+  ext:   { name: 'Extended', sub: 'Realistic, plus log escrow, an interconnect tap and a customer check.',
+           ch: [...C8, ['cust', 'Customer check', 'Cus-tomer', 1], SPEC, ['probe', 'Cable probe (days 26 to 30)', 'Probe', 2],
+                ['esc', 'Log escrow', 'Escrow', 2], ['tap', 'Interconnect tap', 'Tap', 2]], readers: ['checks', 'rule', 'tap'] } };
+const GROUPS = ["Operator's own records", 'Third parties', "Verifier's own instruments"];
+const READS = { checks: ['sys', 'log', 'en', 'inv', 'out', 'bank'], rule: ['en', 'spec'], tap: ['en', 'tap'] };
+const RNAME = { checks: 'Fixed checks', rule: 'Sensor rule', tap: 'Tap rule', det: 'Detective' };
+const RSUB = { checks: 'Arithmetic over six records', rule: 'Energy, then the power sensor', tap: 'Energy, then the interconnect tap', det: 'Sonnet 5.5, chooses what to read' };
+const G = '2,000 shipped, 2,000 listed', I = 'Matches inference demand', TWO = 'Two clusters, 2,000 GPUs', ED = 'Edited to show almost nothing';
+const SAME = 'The same. Nothing is hidden.', MATCH = 'Copies match the log shown now', FALSE1 = 'Copies match: the log was false from day one';
+const INT = 'Internal job: no customer to ask', NOC = 'No customer: nobody was invoiced', ENDED = 'ended before day 26';
+// s/n: the eight records, then sensor and probe with the original instruments. r: sensor and probe, realistic. x: escrow, tap, customer.
+// v: fixed checks, sensor rule (original), detective. vr: sensor rule (realistic). vx: tap rule.
+const CASES = [
+ { id: 'H1', k: 'clean', cheat: 0, truth: 'Inference, plus three small declared jobs. Largest run 7,200 GPU-hours.', story: SAME, s: 'BBBBBBBBTB',
+   n: [TWO, 'Three small jobs, as they ran', 'Nothing unusual', 'Low, except on fine-tune days', 'Small bumps on job days', G, I, 'All invoices paid by the customers', 'Two short lines, 100 and 150 GPUs', 'Idle nodes in days 26 to 30'],
+   r: ['TB', ['Short lines only, two or three days each', 'Idle nodes in days 26 to 30']],
+   x: ['BBB', [MATCH, 'Near zero, except on fine-tune days', 'Real companies; replies match the log']],
+   v: ['clean', 'clean', 'clean'], vr: 'clean', vx: 'clean', det: ['sys', 'log', 'en', 'inv', 'out', 'spec', 'probe'], pts: 16,
+   t: ['All five checks pass.', 'The sensor shows two short lines. Largest run about 7,900 GPU-hours.', 'Read the sensor on four days and probed once. Found nothing hidden.'],
+   tr: 'Short lines only. From the energy above the quietest day, the largest run is about 7,400 GPU-hours.', tx: 'The tap is high only on fine-tune days: about 6,300 GPU-hours.' },
+ { id: 'H2', k: 'messy', cheat: 0, truth: 'As H1. A disk failed on day 11 and one customer pays late.', story: 'The same, with three days of log missing.', s: 'BQBBTBBQTB',
+   n: [TWO, 'Days 11 to 13 are missing', 'Disk failure; one customer pays late', 'Low, except on fine-tune days', 'Days 11 to 13 at the normal level', G, I, 'Lumen Health has not paid', 'Two short lines; none on days 11 to 13', 'Idle nodes in days 26 to 30'],
+   r: ['TB', ['Short lines only; none on days 11 to 13', 'Idle nodes in days 26 to 30']],
+   x: ['TBB', ['Copies for days 11 to 13 exist: no jobs ran', 'Near zero, except on fine-tune days', 'Lumen Health is real, six years old']],
+   v: ['violation', 'clean', 'clean'], vr: 'clean', vx: 'clean', det: ['sys', 'log', 'staff', 'en', 'inv', 'out', 'bank', 'spec', 'probe'], pts: 16,
+   t: ['Flags the missing log days and the unpaid invoice. Both are true and neither is cheating.', 'Ignores the log and the bank, so the mess never reaches it.', 'Saw the same two flags, asked the staff, then used energy and the sensor to cover the missing days.'],
+   tr: 'Ignores the log and the bank. Largest run about 8,900 GPU-hours.', tx: 'Ignores the log and the bank. Largest run about 7,800 GPU-hours.' },
+ { id: 'H3', k: 'big batch', cheat: 0, truth: 'A customer\'s batch inference job on 700 GPUs for eight days. Largest training run 7,200 GPU-hours.', story: SAME, s: 'BBBBQBQBTS',
+   n: [TWO, 'A batch job on 700 GPUs, days 12 to 19', 'Results were collected in one go', 'Low during the batch job', 'F1 high and flat for eight days', G, 'Nothing during the job, then 40 TB at once', 'All invoices paid by the customers', 'No line on F1 during the job', 'The job ' + ENDED],
+   r: ['TS', ['No line on F1 during the job (on this seed)', 'The job ' + ENDED]],
+   x: ['BTB', [MATCH, 'Near zero inside A during the job', 'Meridian is real; no reply in time']],
+   v: ['violation', 'clean', 'clean'], vr: 'clean', vx: 'clean', det: ['sys', 'log', 'en', 'inv', 'out', 'bank', 'spec', 'probe'], pts: 15,
+   t: ['Flags the traffic: nothing goes out for eight days, then 40 TB at once.', 'Energy points it at the job\'s days. The sensor finds no line there.', 'Saw the traffic flag, then found no line on the sensor during the job.'],
+   tr: 'No line during the batch job on this seed, so it counts only the small fine-tune. On two of three seeds the job is periodic and the rule accuses.', tx: 'The tap is near zero during the batch job, so it counts only the small fine-tune.' },
+ { id: 'H4', k: 'three fine-tunes', cheat: 0, truth: 'Three customers fine-tune separately. Largest run 25,200 GPU-hours.', story: SAME, s: 'BQBBBBBBTS',
+   n: [TWO, 'Three fine-tunes, together above the limit', 'Three separate customers', 'High on fine-tune days, as declared', 'Matches the three jobs', G, I, 'Three customers, three payers', 'Three lines at three frequencies', 'All three ' + ENDED],
+   r: ['TS', ['Three lines, three frequencies, different days', 'All three ' + ENDED]],
+   x: ['BBT', [MATCH, 'High on fine-tune days; two overlap in A', 'Three real companies, each confirms its own job']],
+   v: ['clean', 'clean', 'clean'], vr: 'clean', vx: 'violation', det: ['sys', 'log', 'sw', 'en', 'inv', 'bank', 'spec'], pts: 15,
+   t: ['Looks only at each declared job\'s size, and each is under the limit. Right, but it never asks whether they are one run.', 'Three lines at three frequencies, so three runs.', 'Read the sensor on four days and compared frequencies and payers.'],
+   tr: 'Splits the lines by frequency. Largest run about 40,000 GPU-hours, under the limit.', tx: 'Two fine-tunes overlap in cluster A and the tap can\'t tell them apart. Its estimate for the pair, 53,000 GPU-hours, is over the limit.' },
+ { id: 'C1', k: 'relabelled', cheat: 1, truth: 'One training run on 700 GPUs, days 20 to 28: 151,200 GPU-hours.', story: 'An internal batch inference job.', s: 'BOOOQBQBTT',
+   n: [TWO, 'The run is listed as batch job bt-0460', '"Synthetic data, it stays on site"', ED, 'F1 high for nine days; the label explains it', G, 'The batch job sends nothing out', 'Internal job, so no invoice', 'Line at 0.90 Hz, 700 GPUs, nine days', 'Job nodes: training, 700 GPUs in sync'],
+   r: ['QT', ['Line on F1 for nine days; batch work can be periodic', 'Job nodes read as training, not batch']],
+   x: ['BTS', [FALSE1, 'About 700 GB/s inside A for nine days', INT]],
+   v: ['violation', 'violation', 'violation'], vr: 'violation', vx: 'violation', det: ['sys', 'log', 'en', 'inv', 'spec', 'probe'], pts: 8,
+   t: ['Catches it through the traffic flag alone: a batch job that sends nothing out. The same flag is a false alarm in E3.', 'A line at 0.90 Hz, about 700 GPUs, for nine days.', 'Energy, then the sensor, then a probe on the job\'s nodes.'],
+   tr: 'Counts the energy on days with a line: about 151,000 GPU-hours. It says the same about the honest periodic batch job in E3.', tx: 'About 700 GB/s for nine days: about 160,000 GPU-hours.' },
+ { id: 'C2', k: 'split', cheat: 1, truth: 'One training run on 1,100 GPUs across both clusters: 166,100 GPU-hours.', story: 'Six fine-tunes for six customers.', s: 'BOOBBBBQTT',
+   n: [TWO, 'Six fine-tunes for six customers', '"One reseller programme"', '700 and 400 GB/s, as six fine-tunes would give', 'Matches the six declared jobs', G, I, 'All six paid by the operator\'s parent', 'Same 0.90 Hz line on both feeds, same days', 'One fingerprint across 1,100 GPUs'],
+   r: ['QB', ['Lines near 0.9 Hz on both feeds, same days', 'Reads as training, as fine-tunes would; no run identity']],
+   x: ['BTQ', [FALSE1, 'About 250 GB/s between the two clusters', 'Six companies, weeks old, at the parent\'s address']],
+   v: ['clean', 'violation', 'violation'], vr: 'violation', vx: 'violation', det: ['sys', 'log', 'en', 'inv', 'spec', 'probe'], pts: 10,
+   t: ['Every record agrees with the six declared jobs. The billing check asks whether invoices are paid, not who paid.', 'The same line on both feeds on the same days adds up to one run.', 'The sensor on both feeds, then a probe: one fingerprint across 1,100 GPUs.'],
+   tr: 'Joins the lines on both feeds by frequency: about 159,000 GPU-hours. It does the same to the two honest jobs in E4.', tx: 'Reads the tap between the clusters, finds training traffic there and joins the two: about 184,000 GPU-hours.' },
+ { id: 'C3', k: 'paused', cheat: 1, truth: 'One training run on 800 GPUs, days 5 to 16: 230,400 GPU-hours.', story: 'Nothing ran. When asked: a cooling stress test.', s: 'BOOOQBBBTS',
+   n: [TWO, 'The run is absent', '"A cooling stress test"', ED, 'Far above what the log explains, days 5 to 16', G, I, 'Nobody was invoiced for it', 'Line at 0.85 Hz on both feeds, 12 days', 'The run ' + ENDED],
+   r: ['QS', ['Lines on both feeds for 12 days; nothing in the log', 'The run ' + ENDED]],
+   x: ['BTS', [FALSE1, 'About 420 GB/s in each cluster, days 5 to 16', NOC]],
+   v: ['violation', 'violation', 'violation'], vr: 'violation', vx: 'violation', det: ['sys', 'log', 'sw', 'en', 'inv', 'out', 'bank', 'spec', 'probe'], pts: 14,
+   t: ['Energy is far above what the log explains on 24 feed-days.', 'A line at 0.85 Hz on both feeds for 12 days.', 'Followed the energy gap to the sensor. Its probe came too late, as the run had ended.'],
+   tr: 'Lines on both feeds for 12 days: about 213,000 GPU-hours.', tx: 'Training traffic in both clusters and between them: about 231,000 GPU-hours.' },
+ { id: 'C4', k: 'hidden cluster', cheat: 1, truth: 'One training run on a hidden third cluster of 600 GPUs for 25 days: 360,000 GPU-hours.', story: 'Two clusters. Feed F3 is cooling and storage.', s: 'OOOSQTBBTT',
+   n: ['Third cluster missing; F3 listed as cooling', 'The run is absent', '"We resold 600 units"', 'No counters exist for the hidden cluster', 'F3 draws as much as 600 busy GPUs', '2,600 shipped, 2,000 listed', I, 'Nobody was invoiced for it', 'Line at 0.95 Hz on F3, 24 days', 'Serial SN102001: training, 600 GPUs'],
+   r: ['QS', ['Line on F3 for 24 days; cooling can be periodic too', 'The hidden cluster\'s chips are not presented']],
+   x: ['BSS', [FALSE1, 'No tap on the hidden cluster', NOC]],
+   v: ['violation', 'violation', 'violation'], vr: 'violation', vx: 'clean', det: ['sys', 'en', 'inv', 'spec', 'probe'], pts: 7,
+   t: ['Inventory: 2,600 GPUs shipped, 2,000 on the list.', 'Energy on F3, then a line there for 24 days.', 'Shipments against the site list, then the sensor on F3, then a probe by serial number.'],
+   tr: 'A line on F3 for 24 days: about 414,000 GPU-hours.', tx: 'There is no tap on a cluster the operator doesn\'t list, so it sees only the two small fine-tunes.' },
+ { id: 'E1', k: 'no line, relabelled', cheat: 1, truth: 'One training run on 700 GPUs, days 18 to 28, built to hide its power line: 184,800 GPU-hours.', story: 'An internal batch inference job.', s: 'BOOOQBQBST',
+   n: [TWO, 'The run is listed as batch job bt-0480', '"Synthetic data, it stays on site"', ED, 'F1 high for 11 days; the label explains it', G, 'The batch job sends nothing out', 'Internal job, so no invoice', 'No line: the run suppresses it', 'Job nodes: training, 700 GPUs in sync'],
+   r: ['QQ', ['Weak line, on and off, on 10 of 11 days', 'About two in three job chips read as training']],
+   x: ['BTS', [FALSE1, 'About 6 GB/s inside A: too much for batch work', INT]],
+   v: ['violation', 'clean', null], vr: 'violation', vx: 'clean',
+   t: ['Catches it through the traffic flag, the same one that wrongly accuses E3.', 'No line, so it sees nothing.', 'A probe on one of the job\'s nodes would show training.'],
+   tr: 'The weak line still shows on most days: about 169,000 GPU-hours. It would say the same of a periodic batch job.', tx: 'About 6 GB/s is under its threshold of 20, so it counts no training. That reading is still about 600 times what batch work gives.' },
+ { id: 'E2', k: 'no line, paused', cheat: 1, truth: 'One training run on 700 GPUs, days 8 to 19, built to hide its power line: 201,600 GPU-hours.', story: 'A batch job for a customer, Sable Analytics.', s: 'BOOOQBOQSS',
+   n: [TWO, 'The run is listed as a customer\'s batch job', '"A document-processing client"', ED, 'F1 high for 12 days; the label explains it', G, 'Junk data sent out to match the label', 'The customer is paid for by the operator\'s parent', 'No line: the run suppresses it', 'The run ' + ENDED],
+   r: ['QS', ['Weak line, on and off, on 10 of 12 days', 'The run ' + ENDED]],
+   x: ['BTQ', [FALSE1, 'About 8 GB/s inside A on days 8 to 19', 'Sable: weeks old, at the parent\'s address']],
+   v: ['clean', 'clean', null], vr: 'violation', vx: 'clean',
+   t: ['Traffic matches because junk data was sent. The invoice is paid, and the check doesn\'t ask by whom.', 'No line, so it sees nothing.', 'Only the payer and the block of energy are left to question.'],
+   tr: 'The weak line still shows on most days: about 168,000 GPU-hours.', tx: 'About 8 GB/s is under its threshold of 20, so it counts no training at all.' },
+ { id: 'E3', k: 'internal batch', cheat: 0, truth: 'An internal batch inference job on 700 GPUs, days 18 to 28. Largest training run 7,200 GPU-hours.', story: SAME, s: 'BBBBQBQBBT',
+   n: [TWO, 'An internal batch job on 700 GPUs', '"Synthetic data, it stays on site" (true)', 'Low during the batch job', 'F1 high for 11 days', G, 'The batch job sends nothing out', 'Internal job, so no invoice', 'No line on F1, as batch work gives', 'Job nodes: batch generation, no training'],
+   r: ['QT', ['Line on F1 for 11 days: this batch job is periodic', 'Job nodes read as inference']],
+   x: ['BTS', [MATCH, 'Near zero inside A during the job', INT]],
+   v: ['violation', 'clean', null], vr: 'violation', vx: 'clean',
+   t: ['Flags the traffic: a batch job that sends nothing out. Here that is true and innocent.', 'No line, so clean. Right, but for the same reason that it misses E1.', 'A probe on one of the job\'s nodes would show batch generation.'],
+   tr: 'This honest batch job is periodic, so the rule counts it as a training run of 171,000 GPU-hours.', tx: 'The tap is near zero during the job, so it counts only the small fine-tune.' },
+ { id: 'E4', k: 'same frequency', cheat: 0, truth: 'Two customers fine-tune at once with the same settings. Largest run 38,500 GPU-hours.', story: SAME, s: 'BQBBBBBBQT',
+   n: [TWO, 'Two fine-tunes at once, together above the limit', '"Same open-source stack, default settings"', '500 and 400 GB/s, as declared', 'Matches the two jobs', G, I, 'Two customers, two payers', 'Same 0.50 Hz line on both feeds, same days', 'Two fingerprints: 500 and 400 GPUs'],
+   r: ['QB', ['Lines near 0.5 Hz on both feeds, same days', 'Both read as training, as declared; no run identity']],
+   x: ['BTT', [MATCH, 'Near zero between the two clusters', 'Two real companies, each confirms its own job']],
+   v: ['clean', 'violation', null], vr: 'violation', vx: 'clean',
+   t: ['Each declared job is under the limit.', 'Joins the two lines at 0.50 Hz into one run of 60,480 GPU-hours.', 'A probe on each cluster would show two fingerprints.'],
+   tr: 'Joins the two lines into one run of 63,000 GPU-hours.', tx: 'Reads the tap between the clusters, finds almost nothing and keeps the jobs apart: largest about 40,000 GPU-hours.' },
+ { id: 'E5', k: 'whole month', cheat: 1, truth: 'One undeclared training run on 250 GPUs for all 30 days: 180,000 GPU-hours.', story: 'Nothing beyond three small jobs.', s: 'BOOOQBBBTT',
+   n: [TWO, 'The run is absent', '"Cluster B idles hot"', ED, 'F2 above the log every day; no quiet day', G, I, 'Nobody was invoiced for it', 'Line at 0.80 Hz on F2, 29 of 30 days', 'Node B-0551: training, 250 GPUs in sync'],
+   r: ['QT', ['Line on F2 on 29 of 30 days', 'Nodes the log calls idle read as training']],
+   x: ['BTS', [FALSE1, 'About 250 GB/s inside B on every day', NOC]],
+   v: ['violation', 'clean', null], vr: 'clean', vx: 'clean',
+   t: ['Energy on F2 is above what the log explains on all 30 days.', 'Reads the sensor only on days when energy is above the feed\'s quietest day. The run raises every day equally, so it samples two days and counts 12,720 GPU-hours.', 'The line is on the sensor every day, and a probe would show training.'],
+   tr: 'Reads the sensor only on raised days. The run raises every day equally, so it counts about 9,000 GPU-hours.', tx: 'Reads the tap only on raised days, so it counts about 16,000 GPU-hours. The tap shows about 250 GB/s on any day it is asked for.' },
+];
+const FINDINGS = {
+ ideal: [
+  ['The operator\'s own records never decide a case.', 'In all seven cheating cases the job log and the staff answers carry the false account, and the traffic counters are edited in five. In the honest cases they are true but look the same as a good forgery would.'],
+  ['The power sensor shows what happened in 9 of 13 cases.', 'Those are the eight first cases and E5. That is why a fixed rule over the sensor matched the detective on the first eight.'],
+  ['The memory probe covers the sensor\'s gaps only while the job is still running.', 'It shows what happened in 7 cases, including E1, E3 and E4 where the sensor is silent or misleading. For anything that ended before day 26 nothing arrives.'],
+  ['E2 has no channel that shows what happened.', 'The line is suppressed, the run ended before the probe window and the outbound traffic was staged. Two questions are left: a block of energy the label explains, and a customer paid for by the operator\'s parent.'],
+  ['In E5 the fact is there and the rule\'s route misses it.', 'The line is on the sensor on 29 of 30 days. The rule reads the sensor only on days when energy is raised, and a run that lasts all month raises none.'],
+  ['The same mark means guilt in one case and nothing in its twin.', '"A batch job that sends nothing out" appears in C1 and E1 (cheating) and in E3 (honest). The fixed checks treat every question as a violation, so they are right twice and wrong once.']],
+ real: [
+  ['A line no longer shows what happened in any cheating case.', 'The sensor only says that something periodic ran. It raises the same question about the seven cheaters as about the honest periodic jobs in E3 and E4.'],
+  ['Five cases have no channel that shows what happened.', 'C2, C3, E1, E2 and E4. With the original instruments it was one.'],
+  ['Hiding the line stops working, and stops mattering.', 'The hidden runs in E1 and E2 still show a weak line on most days. But a visible line proves nothing, so the cheater gains nothing by hiding it.'],
+  ['The probe decides three cases and cannot help two.', 'It shows what happened in C1, E3 and E5, where the job is still running. Without a run identity it cannot tell one run across two clusters (C2) from two separate jobs (E4).'],
+  ['The sensor rule catches more and accuses far more.', 'Over three seeds it catches 18 of 21 cheaters and accuses 9 of 18 honest sites, against 12 and 3 with the original instruments. It accuses every honest site with a large periodic job.']],
+ ext: [
+  ['Every case now has a channel that shows what happened.', 'The tap does so in 9 cases, the chip shipments in C4, and the sensor, the escrow or the customer check in the rest.'],
+  ['The tap does what the sensor no longer can.', 'It separates training from periodic batch work (E1 against E3) and one run across two clusters from two separate jobs (C2 against E4).'],
+  ['The log escrow only clears H2.', 'Every cheater here wrote a false log from the first day, so the sealed copies match it. Escrow would catch a log rewritten afterwards, and no case has one.'],
+  ['The customer check reaches two cheaters and no others.', 'It exposes the shell companies in C2 and E2. In the other five cheating cases the run is internal or uninvoiced, so there is nobody to ask.'],
+  ['The hidden cluster is still found only through the chip shipments.', 'There is no tap, no probe and no counter on hardware the operator does not list.'],
+  ['No single fixed rule reads it all.', 'Over three seeds the tap rule catches 9 of 21 cheaters and accuses 1 of 18 honest sites. It misses C4, E1, E2 and E5 every time, and the sensor rule accuses E3 and E4 every time. The information to get all 13 right exists only across channels.']] };
+
+let world = 'ideal', current = 'C1';
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+function wrap(s, n) { const out = ['']; for (const w of s.split(' ')) { if ((out[out.length - 1] + ' ' + w).trim().length > n) out.push(w); else out[out.length - 1] = (out[out.length - 1] + ' ' + w).trim(); } return out; }
+const right = (c, v) => v !== null && (v === 'violation') === !!c.cheat;
+const curve = (x1, y1, x2, y2) => { const m = (x1 + x2) / 2; return `M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}`; };
+// state and note of one channel in one case in one world
+function cell(c, key, w) {
+  const i8 = C8.findIndex(ch => ch[0] === key);
+  if (i8 >= 0) return [c.s[i8], c.n[i8]];
+  if (key === 'spec' || key === 'probe') { const j = key === 'spec' ? 0 : 1; return w === 'ideal' ? [c.s[8 + j], c.n[8 + j]] : [c.r[0][j], c.r[1][j]]; }
+  const j = ['esc', 'tap', 'cust'].indexOf(key); return [c.x[0][j], c.x[1][j]];
+}
+const verdict = (c, r, w) => r === 'checks' ? c.v[0] : r === 'det' ? c.v[2] : r === 'tap' ? c.vx : w === 'ideal' ? c.v[1] : c.vr;
+const telling = (c, r, w) => r === 'checks' ? c.t[0] : r === 'det' ? c.t[2] : r === 'tap' ? c.tx : w === 'ideal' ? c.t[1] : c.tr;
+const reads = (c, r) => r === 'det' ? (c.det || []) : READS[r];
+const decided = w => CASES.filter(c => WORLDS[w].ch.some(ch => cell(c, ch[0], w)[0] === 'T')).length;
+
+function drawFlow(c) {
+  const CHS = WORLDS[world].ch, RD = WORLDS[world].readers;
+  const W = 1060, CX = 300, CW = 350, RX = 830, RW = 230, SW = 205;
+  const rowY = {}, span = []; let y = 10, body = '';
+  GROUPS.forEach((g, gi) => {
+    body += `<text class="grp" x="${CX}" y="${y + 11}">${esc(g)}</text>`; y += 20; const top = y;
+    CHS.forEach(ch => { if (ch[3] === gi) { rowY[ch[0]] = y + 20; y += 46; } });
+    span.push([top, y - 6]); y += 14;
+  });
+  const H = y - 4;
+  const opY = (span[0][0] + span[0][1]) / 2, reY = (span[1][0] + span[2][1]) / 2;
+  const srcBox = (cy, h, title, text) => {
+    const top = cy - h / 2;
+    let t = `<rect class="src" x="0.5" y="${top}" width="${SW}" height="${h}" rx="4"/><text class="nm" x="12" y="${top + 20}">${title}</text>`;
+    wrap(text, 30).forEach((l, i) => { t += `<text class="nt" x="12" y="${top + 38 + i * 15}">${esc(l)}</text>`; });
+    return t;
+  };
+  body += srcBox(opY, 110, 'The operator\'s account', c.story) + srcBox(reY, 130, 'What really happened', c.truth);
+  body += `<line x1="102" y1="${reY - 65}" x2="102" y2="${opY + 59}" stroke="currentColor" stroke-width="1.2" marker-end="url(#arr)"/>`;
+  body += `<text class="nt" x="110" y="${(reY - 65 + opY + 55) / 2 + 4}">${c.cheat ? 'changed on the way' : 'reported as it was'}</text>`;
+  let lines = '';
+  CHS.forEach(ch => {
+    const st = cell(c, ch[0], world)[0];
+    lines += `<path class="ln ${st}" d="${curve(SW, ch[3] === 0 ? opY : reY, CX, rowY[ch[0]])}" stroke-width="${st === 'B' || st === 'S' ? 1.3 : 2.2}"/>`;
+  });
+  const rY = {}; RD.forEach((r, k) => { rY[r] = Math.round(H * (k + 1) / (RD.length + 1)); });
+  RD.forEach(r => CHS.forEach(ch => {
+    if (!reads(c, r).includes(ch[0])) return;
+    const st = cell(c, ch[0], world)[0];
+    lines += `<path class="rl ln ${st}" data-r="${r}" d="${curve(CX + CW, rowY[ch[0]], RX, rY[r])}" stroke-width="${st === 'B' || st === 'S' ? 1.2 : 2}" opacity="${st === 'B' ? .5 : .85}"/>`;
+  }));
+  CHS.forEach(ch => {
+    const [st, note] = cell(c, ch[0], world), cy = rowY[ch[0]];
+    body += `<rect class="box" x="${CX}" y="${cy - 20}" width="${CW}" height="40" rx="4"/>`
+      + `<circle class="${st}" cx="${CX + 19}" cy="${cy}" r="9.5"/><text class="gl" x="${CX + 19}" y="${cy + 4}"${st === 'S' ? ' style="fill:var(--muted)"' : ''}>${ST[st][1]}</text>`
+      + `<text class="nm" x="${CX + 38}" y="${cy - 3}">${esc(ch[1])}</text><text class="nt" x="${CX + 38}" y="${cy + 12}">${esc(note)}</text>`;
+  });
+  RD.forEach(r => {
+    const v = verdict(c, r, world), top = rY[r] - 44;
+    const vt = v === null ? 'No result: blocked by the safety filter'
+      : `Says ${v === 'clean' ? 'no violation' : 'violation'}: <tspan class="${right(c, v) ? 'ok' : 'bad'}">${right(c, v) ? '✓ right' : '✗ wrong'}</tspan>`;
+    body += `<g class="reader" data-r="${r}" tabindex="0"><rect class="box" x="${RX}" y="${top}" width="${RW - 0.5}" height="88" rx="4"/>`
+      + `<text class="nm" font-size="13.5" x="${RX + 12}" y="${top + 22}">${RNAME[r]}</text>`
+      + `<text class="nt" x="${RX + 12}" y="${top + 40}">${esc(RSUB[r])}</text><text class="nt" x="${RX + 12}" y="${top + 62}">${vt}</text>`
+      + (r === 'det' && c.pts ? `<text class="nt" x="${RX + 12}" y="${top + 78}">Used ${c.pts} of 30 points</text>` : '') + `</g>`;
+  });
+  document.getElementById('flow').innerHTML =
+    `<svg class="flow" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc('Case ' + c.id + ', ' + WORLDS[world].name.toLowerCase() + ' instruments: what each evidence channel carries and which method reads it')}">`
+    + `<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:currentColor"/></marker></defs>`
+    + lines + body + `</svg>`;
+}
+
+function drawGrid() {
+  const CHS = WORLDS[world].ch, RD = WORLDS[world].readers;
+  const first = gi => CHS.findIndex(ch => ch[3] === gi), count = gi => CHS.filter(ch => ch[3] === gi).length;
+  const sep = i => [first(0), first(1), first(2)].includes(i) ? ' class="sep"' : '';
+  const vcell = (c, r, k) => { const v = verdict(c, r, world), s = k === 0 ? 'sep ' : '';
+    return v === null ? `<td class="${s}none" title="No result">–</td>` : `<td class="${s}${right(c, v) ? 'ok' : 'bad'}" title="${v === 'clean' ? 'No violation' : 'Violation'}">${right(c, v) ? '✓' : '✗'}</td>`; };
+  document.getElementById('grid').innerHTML =
+    `<thead><tr class="band"><th></th><th></th><th colspan="${count(0)}" class="sep">Operator</th><th colspan="${count(1)}" class="sep">Third parties</th><th colspan="${count(2)}" class="sep">Verifier</th><th colspan="${RD.length}" class="sep">Verdict right?</th></tr>`
+    + `<tr><th class="l">Case</th><th class="l">Truth</th>` + CHS.map((ch, i) => `<th${sep(i)}>${ch[2]}</th>`).join('')
+    + RD.map((r, k) => `<th${k === 0 ? ' class="sep"' : ''}>${RNAME[r].replace('Fixed ', '').replace(' rule', ' rule')}</th>`).join('') + `</tr></thead><tbody>`
+    + CASES.map(c => `<tr data-id="${c.id}" tabindex="0" aria-selected="${c.id === current}"><td class="l c">${c.id}</td><td class="l">${c.cheat ? 'Cheating' : 'Honest'}</td>`
+      + CHS.map((ch, i) => { const [st, note] = cell(c, ch[0], world); return `<td${sep(i)} title="${esc(ST[st][0] + ': ' + note)}"><span class="dot ${st}">${ST[st][1]}</span></td>`; }).join('')
+      + RD.map((r, k) => vcell(c, r, k)).join('') + `</tr>`).join('') + `</tbody>`;
+}
+
+function select(id, scroll) {
+  current = id;
+  const c = CASES.find(x => x.id === id), CHS = WORLDS[world].ch;
+  document.querySelectorAll('#cases button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === id));
+  document.querySelectorAll('#grid tbody tr').forEach(r => r.setAttribute('aria-selected', r.dataset.id === id));
+  document.getElementById('ctitle').textContent = c.id + ', ' + c.k;
+  const tag = document.getElementById('ctag'); tag.textContent = c.cheat ? 'Cheating' : 'Honest'; tag.className = 'tag ' + (c.cheat ? 'cheat' : 'honest');
+  drawFlow(c);
+  const shows = CHS.filter(ch => cell(c, ch[0], world)[0] === 'T').map(ch => ch[1].replace(/ \(.*\)/, '').replace(' per day', '').toLowerCase());
+  document.getElementById('cap').textContent = (shows.length ? 'Here the ' + shows.join(', the ').replace(/, the ([^,]*)$/, ' and the $1') + (shows.length > 1 ? ' show' : ' shows') + ' what happened. ' : 'Here no channel shows what happened. ')
+    + 'Lines on the left run from a source to a channel; lines on the right run to each method that reads the channel. Point at a method to see only its lines.';
+  document.getElementById('readers').innerHTML = WORLDS[world].readers.map(r => {
+    const v = verdict(c, r, world);
+    const vt = v === null ? '<span class="v none">No result</span>' : `<span class="v ${right(c, v) ? 'ok' : 'bad'}">${v === 'clean' ? 'No violation' : 'Violation'}, ${right(c, v) ? 'right' : 'wrong'}</span>`;
+    return `<div><h3>${RNAME[r]}</h3>${vt}<p>${esc(telling(c, r, world))}</p></div>`;
+  }).join('');
+  if (scroll) document.getElementById('cases').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}
+
+function setWorld(w) {
+  world = w;
+  document.querySelectorAll('#worlds button').forEach(b => b.setAttribute('aria-pressed', b.dataset.w === w));
+  drawGrid();
+  document.getElementById('ftitle').textContent = 'What the picture shows, ' + WORLDS[w].name.toLowerCase() + ' instruments';
+  document.getElementById('findings').innerHTML = FINDINGS[w].map(f => `<li><b>${esc(f[0])}</b>${esc(f[1])}</li>`).join('');
+  select(current);
+}
+
+document.getElementById('worlds').innerHTML = Object.entries(WORLDS).map(([k, w]) =>
+  `<button type="button" id="world-${k}" data-w="${k}" aria-pressed="false"><b>${w.name}</b><span>${w.sub}</span><span class="n">${decided(k)} of 13 cases have a channel that shows what happened</span></button>`).join('');
+document.getElementById('worlds').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setWorld(b.dataset.w); });
+document.getElementById('cases').innerHTML = CASES.map(c => `<button type="button" id="case-${c.id}" data-id="${c.id}" aria-pressed="false">${c.id}<span class="k">${c.k}</span></button>`).join('');
+document.getElementById('cases').addEventListener('click', e => { const b = e.target.closest('button'); if (b) select(b.dataset.id); });
+document.getElementById('legend').innerHTML = Object.entries(ST).map(([k, v]) => `<li><span class="dot ${k}">${v[1]}</span><span><b style="color:var(--fg);font-weight:500">${v[0]}</b>: ${v[2]}</span></li>`).join('');
+const grid = document.getElementById('grid');
+grid.addEventListener('click', e => { const r = e.target.closest('tbody tr'); if (r) select(r.dataset.id, true); });
+grid.addEventListener('keydown', e => { const r = e.target.closest('tbody tr'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(r.dataset.id, true); } });
+setWorld('ideal');
+</script>

@@ -1,0 +1,16 @@
+﻿Claude Code 2.1.330, logged in with a Claude subscription. API keys are removed for these calls.
+2 cases | provider=claude-cli | model=sonnet
+  C2-split-seed0: VIOLATION (truth: VIOLATION), 11 points
+python : claude -p failed (exit 1): API Error: Sonnet 5.5's safeguards flagged this message 
+(https://www.anthropic.com/legal/aup). This sometimes happens with safe, normal conversations. Claude Code can't 
+respond to this message with Sonnet 5.5.
+At line:1 char:502
++ ... ine).Lines; python run.py --provider claude-cli --only H1,C2 2>&1 | T ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (claude -p faile...ith Sonnet 5.5.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Try rephrasing the request in a new session or change your model.
+
+Learn more: https://su

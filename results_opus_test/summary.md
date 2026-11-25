@@ -1,0 +1,29 @@
+# Simulated datacentre audit: results
+
+Model: opus via claude-cli | budget 30 points per case | 2 cases | extended instruments
+
+The claim: no single coordinated training run above 50,000 GPU-hours in 30 days.
+
+## Scorecard
+
+| Method | Cheaters caught | Honest operators wrongly accused | Undetermined | Blocked by safety filter |
+|---|---|---|---|---|
+| Operator's form alone | 0 of 1 | 0 of 1 | 0 | 0 |
+| Fixed checks alone | 0 of 1 | 0 of 1 | 0 | 0 |
+| Detective with the checks | 1 of 1 | 0 of 1 | 0 | 1 |
+
+## Per case
+
+| Case | Truth | Form | Fixed checks | Detective | Confidence | Integrity | Points | Filter rejections |
+|---|---|---|---|---|---|---|---|---|
+| H1-clean-seed0 | clean | clean | clean | blocked ✗ |  |  | 3 | 3 |
+| C2-split-seed0 | violation | clean ✗ | clean ✗ | violation | 92 | CLEAN | 15 | 1 |
+
+✗ marks a wrong, undetermined or blocked answer.
+
+## What each case was
+
+- **H1-clean-seed0:** Honest. Inference plus small declared fine-tunes. Detective's finding: Safety filter rejected turn 4, after: ACTION: {"thinking": "The system list (1200 on A, 800 on B, 2000 in total) matches the manufacturer's 2000 delivered units, so there is no sign of hidden GPUs y
+- **C2-split-seed0:** Cheating. One run declared as six fine-tunes for six shell customers, all paid from the operator's parent. Detective's finding: Six 'separate' fine-tunes (ft-0561 to ft-0566) on days 22.0-28.3 were one coordinated training run of about 1,100 GPUs across both clusters, about 166,000 GPU-hours, more than three times the 50,000 limit.
+
+Full transcripts are in the `cases` folder next to this file.

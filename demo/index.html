@@ -1,0 +1,367 @@
+<title>Automated Auditor Test Bed</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column that introduces the audit step by step; every section ends in a fold with the full detail. */
+:root {
+  --bg: #F7F7F4; --card: #FFFFFF; --ink: #16181D; --ink2: #3A3F4B; --muted: #5B6070; --line: #D5D9E0;
+  --band: #1D2433; --band-ink: #FFFFFF; --band-ink2: #C9D1E3; --accent: #2F5BEA; --accent-ink: #FFFFFF;
+  --warm: #B4570A; --good: #0A7A0A; --bad: #B93030; --wash: #EEF1F8; --code: #F1F2F5;
+  --display: 'Space Grotesk', Inter, system-ui, sans-serif; --body: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #151A26; --card: #232B3D; --ink: #F0EFEC; --ink2: #C9D1E3; --muted: #9AA2B5; --line: #39415A;
+  --band: #0E121B; --band-ink: #FFFFFF; --band-ink2: #C9D1E3; --accent: #8FA8FF; --accent-ink: #10131C;
+  --warm: #F0A35E; --good: #5CCB5C; --bad: #F08A8A; --wash: #1B2233; --code: #1B2233; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #151A26; --card: #232B3D; --ink: #F0EFEC; --ink2: #C9D1E3; --muted: #9AA2B5; --line: #39415A;
+  --band: #0E121B; --band-ink: #FFFFFF; --band-ink2: #C9D1E3; --accent: #8FA8FF; --accent-ink: #10131C;
+  --warm: #F0A35E; --good: #5CCB5C; --bad: #F08A8A; --wash: #1B2233; --code: #1B2233; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px }
+.col { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px }
+.wide { max-width: 1040px; margin: 0 auto }
+section { display: flex; flex-direction: column; gap: 16px; padding-block: 36px 8px }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: -0.01em }
+h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.1 }
+h2 { font-size: 1.6rem; line-height: 1.2 }
+h3 { font-size: 1.1rem }
+p { margin: 0; color: var(--ink2) } p strong, li strong { color: var(--ink) }
+a { color: var(--accent) }
+.step { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted) }
+header.top { padding-block: 56px 8px; display: flex; flex-direction: column; gap: 16px }
+.lede { font-size: 1.2rem; line-height: 1.5; color: var(--ink2) }
+.claim { background: var(--band); color: var(--band-ink); border-radius: 14px; padding: 22px 24px; display: flex; flex-direction: column; gap: 8px }
+.claim .step { color: var(--band-ink2) }
+.claim q { font-family: var(--display); font-size: 1.35rem; line-height: 1.35; quotes: none }
+ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; color: var(--ink2) }
+details { border: 1px solid var(--line); border-radius: 10px; background: var(--card) }
+details > summary { cursor: pointer; padding: 12px 16px; font-weight: 600; color: var(--ink); list-style-position: inside }
+details > summary:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+details > .inner { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0 }
+.scroll { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums }
+th { text-align: left; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 8px 10px 8px 0 }
+td { padding: 9px 10px 9px 0; border-top: 1px solid var(--line); vertical-align: top; color: var(--ink2) }
+td:first-child { color: var(--ink); font-weight: 500 }
+pre { margin: 0; font-family: var(--mono); font-size: 0.8rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--code); color: var(--ink); padding: 12px 14px; border-radius: 8px }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px }
+figure img { border-radius: 12px; border: 1px solid var(--line); width: 100%; height: auto; display: block }
+figcaption { font-size: 0.88rem; color: var(--muted) }
+.plot-dark { display: none }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .plot-light { display: none } :root:not([data-theme="light"]) .plot-dark { display: block } }
+:root[data-theme="dark"] .plot-light { display: none } :root[data-theme="dark"] .plot-dark { display: block }
+/* the playable case */
+.play { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0 }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+button { font: inherit; font-size: 0.9rem; font-weight: 500; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 12px; cursor: pointer; min-height: 40px }
+button:hover:not(:disabled) { border-color: var(--accent) }
+button:disabled { opacity: 0.45; cursor: not-allowed }
+button.on, button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+button .cost { color: var(--muted); font-weight: 400; margin-left: 6px } button.on .cost, button.primary .cost { color: inherit }
+select, input[type=number] { font: inherit; font-size: 0.9rem; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px; min-height: 40px; max-width: 100% }
+input[type=number] { width: 5em }
+.group { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line) }
+.group > .who { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted) }
+.meter { display: flex; align-items: center; gap: 12px; font-variant-numeric: tabular-nums }
+.meter .bar { flex: 1 1 120px; height: 8px; border-radius: 4px; background: var(--wash); overflow: hidden }
+.meter .bar i { display: block; height: 100%; background: var(--accent); transition: width .2s }
+@media (prefers-reduced-motion: reduce) { .meter .bar i { transition: none } }
+#log { display: flex; flex-direction: column; gap: 10px; max-height: 460px; overflow-y: auto }
+#log .ask { font-size: 0.82rem; font-weight: 600; color: var(--muted) }
+.pill { display: inline-block; white-space: nowrap; font-size: 0.78rem; font-weight: 600; border-radius: 999px; padding: 2px 10px; border: 1px solid currentColor }
+.pill.good { color: var(--good) } .pill.bad { color: var(--bad) } .pill.mid { color: var(--muted) }
+.reveal { background: var(--wash); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px }
+.cards > div { border-top: 3px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 4px }
+.cards > div.a { border-color: var(--accent) } .cards > div.w { border-color: var(--warm) }
+.cards p { font-size: 0.92rem }
+.note { font-size: 0.9rem; color: var(--muted) }
+footer { padding-top: 32px; font-size: 0.88rem; color: var(--muted); display: flex; flex-direction: column; gap: 6px }
+</style>
+
+<div class="col">
+<header class="top">
+  <span class="step">A simulated datacentre audit</span>
+  <h1>Can an automated auditor check a compute claim?</h1>
+  <p class="lede">A datacentre says it has not trained a large AI model. An auditor gets 30 points to spend on evidence and has to decide whether that is true. This page lets you try it, then shows how fixed rules and language models did on the same sites.</p>
+  <div class="claim">
+    <span class="step">The claim under audit</span>
+    <q>In the last 30 days, no single coordinated training run at this site used more than 50,000 GPU-hours.</q>
+  </div>
+  <p class="note">Everything here is simulated. The operator, its staff, customers and records are fictional and computer-generated, and the true answer for every site is known.</p>
+</header>
+
+<section>
+  <span class="step">1 · The site</span>
+  <h2>Evidence differs in who stands behind it</h2>
+  <p>The site has two GPU clusters, 1,200 and 800 chips. The operator keeps logs and answers questions, but a cheating operator can edit both. So the auditor also has records held by outsiders and instruments of its own.</p>
+  <div class="scroll"><table>
+    <tr><th>Who vouches</th><th>Evidence</th><th>How hard to fake</th></tr>
+    <tr><td>The operator</td><td>System list, scheduler log, switch counters, staff answers</td><td>Easy: it can be edited or rehearsed</td></tr>
+    <tr><td>Outsiders</td><td>Grid meter, chip maker's shipment list, internet provider, bank, company register, the customers</td><td>Hard: someone else holds the record</td></tr>
+    <tr><td>The auditor's own instruments</td><td>Power sensor, traffic tap between GPUs, probe on a chip's power cable, sealed daily copies of the logs</td><td>Hard, but imperfect: each can be fooled in a known way</td></tr>
+  </table></div>
+  <details><summary>How good are the instruments?</summary><div class="inner">
+    <ul>
+      <li><strong>Power sensor.</strong> Training leaves a periodic line in high-rate power data. The sensor finds it on about 96% of a run's days. A line only means "something periodic": half of batch inference jobs and some cooling controllers produce one too. A run built to hide shows a weak line on 87% of days.</li>
+      <li><strong>Traffic tap.</strong> Ordinary training exchanges about 1 GB/s per GPU, inference about 10 kB/s. The tap is within 30%. A run built to exchange less sends 100 times less. There is no tap on hardware the operator hasn't listed.</li>
+      <li><strong>Chip probe.</strong> A guess at training or inference from one chip's current: right 97% of the time, 65% against a disguised run. It only works in the last five days and only on chips the operator presents.</li>
+      <li><strong>Sealed logs.</strong> A copy of each day's scheduler log goes to the auditor at midnight. It shows what was recorded on the day, not whether the record was true.</li>
+    </ul>
+    <p class="note">The 96%, 87% and 97% come from the papers listed at the end. The share of periodic batch jobs, the 30% and the 65% are choices with no source.</p>
+  </div></details>
+</section>
+
+<section>
+  <span class="step">2 · Try it</span>
+  <h2>Audit a site yourself</h2>
+  <p>Pick a site, ask for evidence, and give a verdict when you're ready. Each request costs points. Afterwards you see what really happened and what every other method answered.</p>
+</section>
+</div>
+
+<div class="wide"><div class="play" id="play"><p class="note">Loading the sites…</p></div></div>
+
+<div class="col">
+<section>
+  <span class="step">3 · Who else played</span>
+  <h2>Fixed rules against language models</h2>
+  <p>Seven methods judged the same 26 hand-built sites, 14 cheating and 12 honest, with the same evidence and the same 30 points.</p>
+  <div class="cards">
+    <div><h3>Fixed checks</h3><p>Arithmetic over the records: inventory, energy, traffic, billing. Any flag counts as a violation.</p></div>
+    <div><h3>Tap rule</h3><p>Reads the traffic tap on days when the grid meter is raised and adds up what looks like training.</p></div>
+    <div class="a"><h3>Language models</h3><p>Luna, Terra, Sol and Opus choose their own evidence, turn by turn, and write a report.</p></div>
+    <div class="w"><h3>Script</h3><p>Sol's routine written down as seven fixed rules, after reading how Sol worked.</p></div>
+  </div>
+</section>
+</div>
+
+<div class="wide">
+<figure>
+  <img class="plot-light" src="plots/outcomes_light.png" alt="Stacked bars of outcomes per method on 14 cheating and 12 honest sites. The table below the figure gives every number.">
+  <img class="plot-dark" src="plots/outcomes_dark.png" alt="Stacked bars of outcomes per method on 14 cheating and 12 honest sites. The table below the figure gives every number.">
+  <figcaption>What each method said on the 26 hand-built sites. Opus is the only model that was told it is in a simulation, and its run stopped at a spending cap after 23 sites.</figcaption>
+</figure>
+</div>
+
+<div class="col">
+<section style="padding-top:16px">
+  <ul>
+    <li><strong>The models never gave a wrong firm answer here.</strong> Their failure is abstaining: the weaker the model, the more often it says "undetermined".</li>
+    <li><strong>The simple rules fail in opposite directions.</strong> The fixed checks accuse half the honest sites; the tap rule calls 8 of 14 cheaters clean.</li>
+    <li><strong>The script got every site right.</strong> That says more about the simulator than about scripts: see the caveat below.</li>
+    <li><strong>One model's safety filter cut off cases mid-audit.</strong> Five of the six cases it blocked were cheating sites.</li>
+  </ul>
+  <details><summary>The numbers as a table</summary><div class="inner scroll"><table>
+    <tr><th>Method</th><th>Cheaters caught</th><th>Honest cleared</th><th>Undetermined</th><th>Blocked</th><th>Wrong</th></tr>
+    <tr><td>Fixed checks</td><td>10 of 14</td><td>6 of 12</td><td>0</td><td>0</td><td>10</td></tr>
+    <tr><td>Tap rule</td><td>6 of 14</td><td>12 of 12</td><td>0</td><td>0</td><td>8</td></tr>
+    <tr><td>Luna (gpt-6-luna)</td><td>3 of 14</td><td>0 of 12</td><td>23</td><td>0</td><td>0</td></tr>
+    <tr><td>Terra (gpt-6.1-terra)</td><td>5 of 14</td><td>9 of 12</td><td>12</td><td>0</td><td>0</td></tr>
+    <tr><td>Sol (gpt-6.2-sol)</td><td>7 of 14</td><td>12 of 12</td><td>7</td><td>0</td><td>0</td></tr>
+    <tr><td>Opus (claude-opus-5-5), 23 run</td><td>8 of 13</td><td>9 of 10</td><td>0</td><td>6</td><td>0</td></tr>
+    <tr><td>Script</td><td>14 of 14</td><td>12 of 12</td><td>0</td><td>0</td><td>0</td></tr>
+  </table></div></details>
+  <details><summary>Why the script's score overstates what a script can do</summary><div class="inner">
+    <p>The script was written by someone who knew the simulator's code and its list of cheating methods. A real script author would not know in advance how an operator cheats. Two of its rules leaned on things only the tidy simulator guaranteed: that a shell customer is always paid for by the operator's parent company, and that an honest site has no load its records don't explain. The next section breaks both.</p>
+    <pre id="scriptdoc"></pre>
+  </div></details>
+  <details><summary>The instructions the language models got</summary><div class="inner"><pre id="prompt"></pre></div></details>
+</section>
+
+<section>
+  <span class="step">4 · Making it harder</span>
+  <h2>Sites nobody hand-picked, then everyday mess</h2>
+  <p>Hand-built cases flatter whoever built them. So a recipe now generates sites: half cheat, hiding one oversized run in one of five ways, and honest sites may carry something that looks like cheating. Then the same 200 sites get everyday mess.</p>
+  <ul>
+    <li><strong>Who pays stops giving shells away.</strong> Shell customers may pay for themselves and look ordinary in the register; real customers may share a reseller.</li>
+    <li><strong>Honest sites have load nobody logged.</strong> New GPUs are burned in outside the scheduler; an engineer runs a small test.</li>
+    <li><strong>The site is untidy.</strong> A grid meter is swapped, demand surges, part of a cluster is switched off, a log time is a day off.</li>
+    <li><strong>Instruments fail or are blinded.</strong> A cheater may blind a sensor or tap, usually breaking its seal, or decline to present chips to the probe.</li>
+  </ul>
+</section>
+</div>
+
+<div class="wide">
+<figure>
+  <img class="plot-light" src="plots/mess_light.png" alt="Paired bars per method, tidy against messy sites. The table below the figure gives every number.">
+  <img class="plot-dark" src="plots/mess_dark.png" alt="Paired bars per method, tidy against messy sites. The table below the figure gives every number.">
+  <figcaption>The model-free methods on the same 200 generated sites, without and with mess. The script was not changed after seeing the messy sites.</figcaption>
+</figure>
+</div>
+
+<div class="col">
+<section style="padding-top:16px">
+  <ul>
+    <li><strong>The fixed checks become useless.</strong> With mess they flag 80 of 92 honest sites, because any disorder trips a check.</li>
+    <li><strong>The script cracks where its guarantees were.</strong> It misses split runs whose shells pay for themselves and accuses honest customers who share a reseller. Its rules on physical signals hold.</li>
+    <li><strong>Sol, on 20 generated sites, cleared honest mess well and rarely committed.</strong> It caught 3 of 10 cheaters, accused no honest site, and once called a cheater clean after noting a broken seal.</li>
+  </ul>
+  <details><summary>The numbers as a table</summary><div class="inner scroll"><table>
+    <tr><th>Method</th><th>Tidy: caught of 108</th><th>Tidy: accused of 92</th><th>Messy: caught of 108</th><th>Messy: accused of 92</th></tr>
+    <tr><td>Fixed checks</td><td>86</td><td>49</td><td>101</td><td>80</td></tr>
+    <tr><td>Sensor rule</td><td>91</td><td>36</td><td>91</td><td>44</td></tr>
+    <tr><td>Tap rule</td><td>41</td><td>6</td><td>40</td><td>6</td></tr>
+    <tr><td>Script</td><td>104</td><td>0</td><td>98</td><td>6</td></tr>
+  </table></div></details>
+  <details><summary>Sol against the script on the generated sites it saw</summary><div class="inner scroll"><table>
+    <tr><th>Sites</th><th>Sol</th><th>Script</th></tr>
+    <tr><td>10 tidy generated</td><td>2 of 5 caught, 0 of 5 accused, 3 undetermined, 1 cheater called clean</td><td>5 of 5 caught, 0 of 5 accused</td></tr>
+    <tr><td>10 messy generated</td><td>1 of 5 caught, 0 of 5 accused, 4 undetermined</td><td>5 of 5 caught, 0 of 5 accused</td></tr>
+  </table></div></details>
+  <details><summary>The recipe that generates sites</summary><div class="inner"><pre id="recipedoc"></pre><p class="note">Every chance in the recipe is a choice with no source.</p></div></details>
+</section>
+
+<section>
+  <span class="step">5 · What this suggests</span>
+  <h2>Put the intelligence where it works best</h2>
+  <p>A language model on site was careful and slow, and one was sometimes refused by its own safety filter. A script was fast and committed, but only as good as what its author anticipated. The two fail differently, which suggests splitting the work.</p>
+  <div class="cards">
+    <div class="a"><h3>A hub, off site</h3><p>Models invent new cheating methods and new mess, revise the rules after they fail in simulation, and release a new version only if it does better on sites it has never seen.</p></div>
+    <div class="w"><h3>A sealed runner, on site</h3><p>Runs the released rules inside a sealed environment, writes a short finding and an integrity report, and is wiped. No confidential data flows back to the hub.</p></div>
+  </div>
+  <p>This is a proposal. The hub has so far been run by hand, by one person and one model who also knew the simulator.</p>
+  <details><summary>What this test bed does not show</summary><div class="inner"><ul>
+    <li>The sites are simulated, and every number marked as a choice has no measurement behind it.</li>
+    <li>The 26 hand-built sites are 13 stories with shifted timings. Model runs on generated sites cover 20 sites.</li>
+    <li>Operators follow scripts. They don't adapt to what the auditor asks, and staff answers are keyword lookups.</li>
+    <li>The models are told how the site and the instruments work. A real auditor would have to learn a site's systems.</li>
+    <li>Nothing here tests the sealed environment itself, or whether an instrument was installed honestly.</li>
+    <li>One sentence of prompt changed Sol's results sharply: before a standard of proof was added, it answered "undetermined" on 10 of 11 sites.</li>
+  </ul></div></details>
+</section>
+
+<section>
+  <span class="step">6 · Built on</span>
+  <h2>The work this simulation draws on</h2>
+  <ul>
+    <li><a href="https://arxiv.org/abs/2610.30182">Kimpson, Baker and Graham, <em>Detecting AI Training in Datacentre Power</em> (2026)</a>: the periodic line training leaves in power data, how often a detector finds it, what else produces one, and the price of hiding it.</li>
+    <li><a href="https://techgov.intelligence.org/blog/de-risking-interconnect-limits-for-ai-verification">Sarbakysh and Moskvin, <em>De-risking Interconnect Limits for AI Verification</em> (2026)</a>: how much data training and inference exchange between machines, and how far that can be reduced.</li>
+  </ul>
+  <p class="note">Both were used through summaries of their figures. The simulation's use of them is the author's reading and has not been checked by the papers' authors. The cable-probe accuracy is a figure cited inside the first paper.</p>
+</section>
+
+<footer>
+  <span>Made by Jasper Blank, with Claude as coding assistant. Results from 23 and 24 November 2026.</span>
+  <span>Language models: gpt-6.2-sol, gpt-6.1-terra and gpt-6-luna through a ChatGPT login; claude-opus-5-5 through a Claude subscription.</span>
+</footer>
+</div>
+
+<script>
+(function () {
+  var D, C, left, asked, done;
+  var el = function (tag, attrs, kids) {
+    var n = document.createElement(tag);
+    for (var k in attrs || {}) { if (k === "text") n.textContent = attrs[k]; else if (k === "on") n.addEventListener("click", attrs[k]); else n.setAttribute(k, attrs[k]); }
+    (kids || []).forEach(function (c) { if (c) n.appendChild(c); });
+    return n;
+  };
+  var GROUPS = [["The operator", ["system_list", "scheduler_log", "staff", "switch_counters"]],
+    ["Outsiders", ["utility_energy", "inventory", "outbound_traffic", "bank_payments", "customer_check"]],
+    ["Your own instruments", ["power_spectrum", "interconnect_tap", "chip_probe", "log_escrow", "custody"]],
+    ["A fixed program over the records", ["balance_checks"]]];
+  var NAMES = {system_list: "System list", scheduler_log: "Scheduler log", staff: "Ask the staff", switch_counters: "Switch counters",
+    utility_energy: "Grid meter, 30 days", inventory: "Shipment list", outbound_traffic: "Internet provider", bank_payments: "Bank records",
+    customer_check: "Check a customer", power_spectrum: "Power sensor", interconnect_tap: "Traffic tap", chip_probe: "Probe chips",
+    log_escrow: "Sealed logs", custody: "Custody record", balance_checks: "Fixed checks"};
+  var WORD = {VIOLATION: "Violation", NO_VIOLATION: "No violation", UNDETERMINED: "Undetermined", BLOCKED: "Blocked by safety filter"};
+
+  function sel(id, options) {
+    var s = el("select", {id: id, "aria-label": id});
+    options.forEach(function (o) { s.appendChild(el("option", {value: o, text: String(o).length > 60 ? String(o).slice(0, 57) + "…" : o})); });
+    return s;
+  }
+  function day(id) { return el("input", {type: "number", id: id, min: 1, max: 30, value: 12, "aria-label": "day"}); }
+
+  function request(name, label, text) {
+    var cost = C.channels.filter(function (c) { return c.name === name; })[0].cost;
+    if (done || left < cost) return;
+    left -= cost; asked.push(name);
+    var log = document.getElementById("log");
+    log.appendChild(el("div", {}, [el("div", {class: "ask", text: label + " · " + cost + (cost > 1 ? " points" : " point")}), el("pre", {text: text})]));
+    log.scrollTop = log.scrollHeight;
+    meter();
+  }
+  function meter() {
+    document.getElementById("left").textContent = left + " of " + D.budget + " points left";
+    document.getElementById("fill").style.width = (100 * left / D.budget) + "%";
+    Array.prototype.forEach.call(document.querySelectorAll("#play [data-cost]"), function (b) { b.disabled = done || left < +b.getAttribute("data-cost"); });
+  }
+  function control(ch) {
+    var n = ch.name, cost = ch.cost, label = NAMES[n] || n;
+    var btn = function (fn) { return el("button", {"data-cost": cost, on: fn}, [document.createTextNode(label), el("span", {class: "cost", text: cost + (cost > 1 ? " pts" : " pt")})]); };
+    var v = function (id) { return document.getElementById(id).value; };
+    var d = function (id) { return Math.min(30, Math.max(1, parseInt(v(id), 10) || 1)); };
+    if (C.fixed[n] !== undefined) return el("div", {class: "row"}, [btn(function () { request(n, label, C.fixed[n]); })]);
+    if (n === "power_spectrum") return el("div", {class: "row"}, [btn(function () { request(n, label + ", feed " + v("ps-f") + ", day " + d("ps-d"), C.power_spectrum[v("ps-f")][d("ps-d")]); }), sel("ps-f", Object.keys(C.power_spectrum)), day("ps-d")]);
+    if (n === "interconnect_tap") return el("div", {class: "row"}, [btn(function () { request(n, label + ", link " + v("tap-l") + ", day " + d("tap-d"), C.interconnect_tap[v("tap-l")][d("tap-d")]); }), sel("tap-l", Object.keys(C.interconnect_tap)), day("tap-d")]);
+    if (n === "switch_counters") return el("div", {class: "row"}, [btn(function () { request(n, label + ", cluster " + v("sw-c") + ", day " + d("sw-d"), C.switch_counters[v("sw-c")][d("sw-d")]); }), sel("sw-c", Object.keys(C.switch_counters)), day("sw-d")]);
+    if (n === "customer_check") return el("div", {class: "row"}, [btn(function () { request(n, label + ": " + v("cu"), C.customer_check[v("cu")]); }), sel("cu", Object.keys(C.customer_check))]);
+    if (n === "chip_probe") return el("div", {class: "row"}, [btn(function () { request(n, label + ": " + v("pr"), C.chip_probe[v("pr")]); }), sel("pr", Object.keys(C.chip_probe))]);
+    if (n === "staff") return el("div", {class: "row"}, [btn(function () { request(n, "Staff: " + v("st"), C.staff[v("st")]); }), sel("st", Object.keys(C.staff))]);
+    return null;
+  }
+  function pill(v, truth) {
+    var right = (v === "VIOLATION") === truth && (v === "VIOLATION" || v === "NO_VIOLATION");
+    var cls = v === "UNDETERMINED" || v === "BLOCKED" ? "mid" : right ? "good" : "bad";
+    return el("span", {class: "pill " + cls, text: (WORD[v] || v) + (cls === "good" ? " ✓" : cls === "bad" ? " ✗" : "")});
+  }
+  function verdict(mine) {
+    if (done) return; done = true; meter();
+    var t = C.truth, box = document.getElementById("reveal"); box.hidden = false; box.textContent = "";
+    box.appendChild(el("h3", {text: t.violation ? "This operator was cheating." : "This operator was honest."}));
+    box.appendChild(el("p", {}, [document.createTextNode("Your verdict: "), pill(mine, t.violation), document.createTextNode(" after " + (D.budget - left) + " points. Largest single training run: " + t.largest_run.toLocaleString("en-GB") + " GPU-hours against a limit of 50,000.")]));
+    box.appendChild(el("p", {class: "note", text: "Simulator's note: " + t.note}));
+    var tb = el("table", {}, [el("tr", {}, [el("th", {text: "Method"}), el("th", {text: "Answer"}), el("th", {text: "Its reason"})])]);
+    Object.keys(C.answers).forEach(function (m) {
+      var a = C.answers[m];
+      tb.appendChild(el("tr", {}, [el("td", {text: m}), el("td", {}, [pill(a.verdict, t.violation)]), el("td", {text: a.finding || (a.verdict === "BLOCKED" ? "The model provider's safety filter rejected a message partway through." : "")})]));
+    });
+    box.appendChild(el("div", {class: "scroll"}, [tb]));
+    var jobs = el("details", {}, [el("summary", {text: "What really ran, and what the operator declared"}), el("div", {class: "inner"}, [
+      el("p", {text: "Really ran:"}), el("pre", {text: t.jobs.join("\n") || "no scheduled jobs"}),
+      el("p", {text: "Declared in the scheduler log:"}), el("pre", {text: t.declared.join("\n") || "no scheduled jobs"})])]);
+    box.appendChild(jobs);
+    Object.keys(C.answers).forEach(function (m) {
+      var a = C.answers[m]; if (!a.steps || !a.steps.length) return;
+      var lines = a.steps.map(function (s, i) { return (i + 1) + ". " + (s.action === "report" ? "REPORT" : s.action === "blocked" ? "BLOCKED by the safety filter" : (NAMES[s.action] || s.action) + " " + JSON.stringify(s.args || {})) + (s.think ? "\n   " + s.think : ""); });
+      box.appendChild(el("details", {}, [el("summary", {text: "How " + m + " worked through this site, step by step"}), el("div", {class: "inner"}, [el("pre", {text: lines.join("\n")})])]));
+    });
+    box.scrollIntoView({block: "nearest"});
+  }
+  function load(i) {
+    C = D.cases[i]; left = D.budget; asked = []; done = false;
+    var play = document.getElementById("play"); play.textContent = "";
+    var picker = el("div", {class: "row", role: "group", "aria-label": "Choose a site"});
+    D.cases.forEach(function (c, k) { picker.appendChild(el("button", {class: k === i ? "on" : "", "aria-pressed": k === i, on: function () { load(k); }, text: c.label})); });
+    play.appendChild(picker);
+    play.appendChild(el("p", {}, [el("strong", {text: C.label + ". "}), document.createTextNode(C.blurb + " The operator says no run went over the limit.")]));
+    play.appendChild(el("div", {class: "meter"}, [el("span", {id: "left"}), el("div", {class: "bar"}, [el("i", {id: "fill"})])]));
+    var have = {}; C.channels.forEach(function (c) { have[c.name] = c; });
+    GROUPS.forEach(function (g) {
+      var kids = g[1].filter(function (n) { return have[n]; }).map(function (n) { return control(have[n]); });
+      if (kids.length) play.appendChild(el("div", {class: "group"}, [el("span", {class: "who", text: "Vouched for by: " + g[0]})].concat(kids)));
+    });
+    play.appendChild(el("div", {class: "group"}, [el("span", {class: "who", text: "What came back"}), el("div", {id: "log"}, [el("p", {class: "note", text: "Nothing requested yet. The grid meter and the scheduler log are a common start."})])]));
+    play.appendChild(el("div", {class: "group"}, [el("span", {class: "who", text: "Your verdict"}), el("div", {class: "row"}, [
+      el("button", {class: "primary", on: function () { verdict("VIOLATION"); }, text: "Violation"}),
+      el("button", {class: "primary", on: function () { verdict("NO_VIOLATION"); }, text: "No violation"}),
+      el("button", {on: function () { verdict("UNDETERMINED"); }, text: "Can't tell"})])]));
+    play.appendChild(el("div", {class: "reveal", id: "reveal", hidden: ""}));
+    var first = true;
+    var obs = new MutationObserver(function () { if (first) { var n = document.querySelector("#log > p.note"); if (n) n.remove(); first = false; } });
+    obs.observe(document.getElementById("log"), {childList: true});
+    meter();
+  }
+  fetch("cases.json").then(function (r) { return r.json(); }).then(function (d) {
+    D = d;
+    document.getElementById("prompt").textContent = d.prompt;
+    document.getElementById("scriptdoc").textContent = d.script_doc.trim();
+    document.getElementById("recipedoc").textContent = d.recipe_doc.trim();
+    load(0);
+  }).catch(function () {
+    document.getElementById("play").textContent = "The sites could not be loaded. Reload the page to try again.";
+  });
+})();
+</script>

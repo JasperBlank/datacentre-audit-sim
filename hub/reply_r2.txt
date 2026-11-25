@@ -1,0 +1,717 @@
+```python
+"""Audit coordinated training using metered load, allocations, and verifier samples."""
+
+import itertools
+import re
+import statistics
+from collections import defaultdict, namedtuple
+
+import world
+
+
+JOB = re.compile(
+    r"^\s*-\s+(\S+)\s*\|\s*(training|finetune|batch)\s*\|\s*"
+    r"customer:\s*(.+?)\s*\|\s*nodes\s+([\w-]+)-(\d+)\s+to\s+"
+    r"\4-(\d+)\s*\(([\d,]+)\)\s*\|\s*day\s+(\d+(?:\.\d+)?)\s+"
+    r"to\s+day\s+(\d+(?:\.\d+)?)",
+    re.M | re.I,
+)
+CLUSTER = re.compile(
+    r"Cluster\s+([\w-]+):\s*nodes\s+[\w-]+-(\d+)\s+to\s+"
+    r"[\w-]+-(\d+),\s*power feed\s+([\w-]+)\.([^\n]*)",
+    re.I,
+)
+NUMBER = r"([\d,]+(?:\.\d+)?)"
+Job = namedtuple("Job", "id kind customer cluster lo hi n start end")
+Cluster = namedtuple("Cluster", "lo hi feed pool_end")
+Load = namedtuple("Load", "name feed hours core size capacity")
+Evidence = namedtuple("Evidence", "positive tested")
+METER_MARGIN = 0.18
+TRAIN_INCREMENT = 0.65
+BATCH_INCREMENT = 0.60
+HIGH_INCREMENT = 0.72
+
+
+def number(value):
+    return float(value.replace(",", ""))
+
+
+def overlap(start, end, day):
+    return max(0.0, min(end, day + 1) - max(start, day))
+
+
+def hours(job, day):
+    return 24 * job.n * overlap(job.start, job.end, day)
+
+
+def read_jobs(scheduler, escrow):
+    jobs = {}
+    # An explicit sealed row takes precedence over the current row for that job.
+    for text in (scheduler, escrow):
+        for row in JOB.findall(text):
+            job_id, kind, customer, cluster, lo, hi, n, start, end = row
+            lo, hi = int(lo), int(hi)
+            n = min(hi - lo + 1, int(n.replace(",", "")))
+            start, end = max(1.0, float(start)), min(world.DAYS + 1.0, float(end))
+            if n > 0 and end > start:
+                key = job_id, cluster, lo, hi
+                jobs[key] = Job(job_id, kind.lower(), customer, cluster, lo, hi, n,
+                                start, end)
+    return list(jobs.values())
+
+
+def read_energy(text):
+    energy = {}
+    feeds = []
+    for line in text.splitlines():
+        fields = [field.strip() for field in line.split("|")]
+        if fields[0].lower() == "day":
+            feeds = fields[1:]
+            for feed in feeds:
+                energy.setdefault(feed, {})
+        elif feeds and fields[0].isdigit() and len(fields) == len(feeds) + 1:
+            day = int(fields[0])
+            if 1 <= day <= world.DAYS:
+                for feed, value in zip(feeds, fields[1:]):
+                    if re.fullmatch(r"[\d,]+(?:\.\d+)?", value):
+                        energy[feed][day] = number(value)
+    return energy
+
+
+def read_clusters(text):
+    clusters = {}
+    for name, lo, hi, feed, description in CLUSTER.findall(text):
+        pool = re.search(r"Nodes\s+\d+\s*[-–]\s*(\d+)\s+are the interactive",
+                         description, re.I)
+        lo, hi = int(lo), int(hi)
+        if lo <= hi:
+            clusters[name] = Cluster(lo, hi, feed, int(pool[1]) if pool else lo - 1)
+    return clusters
+
+
+def quiet_level(readings, floor):
+    """Use recurring low readings so that a shutdown cannot set the baseline."""
+    values = sorted(value for value in readings if value >= floor - METER_MARGIN)
+    if len(values) < 2:
+        return None
+    width = max(0.24, 0.025 * values[len(values) // 3])
+    low = values[:max(2, (len(values) + 2) // 3)]
+    for lower in low:
+        band = [value for value in values if lower <= value <= lower + width]
+        if len(band) >= 2:
+            return max(floor, statistics.median(band))
+    return None
+
+
+def stretches(values):
+    run = []
+    for day in range(1, world.DAYS + 2):
+        if values.get(day, 0) > 2 * METER_MARGIN:
+            run.append(day)
+        elif run:
+            yield run
+            run = []
+
+
+def load_blocks(name, feed, excess, capacity):
+    for days in stretches(excess):
+        plateau = statistics.median(excess[day] for day in days)
+        if len(days) < 2 or plateau <= 2 * METER_MARGIN:
+            continue
+        core = [day for day in days if 0.68 * plateau <= excess[day] <= 1.30 * plateau]
+        if len(core) < 2:
+            continue
+        sized = {
+            day: min(24 * capacity, 1000 * (
+                min(excess[day], 1.12 * plateau) - METER_MARGIN
+            ) / HIGH_INCREMENT)
+            for day in days
+        }
+        yield Load(name, feed, sized, core, sum(sized.values()), capacity)
+
+
+def spread(days):
+    """Sample the interval's interior and both ends before filling gaps."""
+    remaining = set(days)
+    if not remaining:
+        return []
+    midpoint = (min(remaining) + max(remaining)) / 2
+    order = [min(remaining, key=lambda day: (abs(day - midpoint), day))]
+    remaining.remove(order[0])
+    while remaining:
+        day = max(remaining, key=lambda d: (min(abs(d - p) for p in order), -d))
+        order.append(day)
+        remaining.remove(day)
+    return order
+
+
+def allocation_groups(jobs):
+    seen = set()
+    for anchor in jobs:
+        by_cluster = defaultdict(list)
+        for job in jobs:
+            if (job.kind == "batch") == (anchor.kind == "batch") and (
+                abs(job.start - anchor.start) <= 0.5
+                and abs(job.end - anchor.end) <= 0.5
+            ):
+                by_cluster[job.cluster].append(job)
+        partitions = {}
+        for cluster, parts in by_cluster.items():
+            runs = []
+            for job in sorted(parts, key=lambda j: (j.lo, j.hi, j.id)):
+                if not runs or runs[-1][-1].hi + 1 != job.lo:
+                    runs.append([])
+                runs[-1].append(job)
+            partitions[cluster] = runs
+        options = [run for runs in partitions.values() for run in runs]
+        for a, b in itertools.combinations(sorted(partitions), 2):
+            options.extend(first + second for first, second in
+                           itertools.product(partitions[a], partitions[b]))
+        for parts in options:
+            key = frozenset(parts)
+            if len(key) >= 2 and key not in seen:
+                seen.add(key)
+                yield parts
+
+
+def judge(w, budget=30):
+    limit = min(30, max(0, budget))
+    spent = 0
+    cache = {}
+    notes = []
+    days = range(1, world.DAYS + 1)
+    threshold = world.THRESHOLD
+
+    def finish(verdict, why):
+        return {"verdict": verdict, "points": spent, "why": why, "notes": notes}
+
+    def violation(why):
+        return finish("VIOLATION", why)
+
+    def ask(name, **args):
+        nonlocal spent
+        key = name, tuple(sorted((arg, tuple(value) if isinstance(value, list) else value)
+                                 for arg, value in args.items()))
+        if key not in cache:
+            channel = w.channels.get(name)
+            if channel is None or spent + channel[1] > limit:
+                return ""
+            spent += channel[1]
+            cache[key] = getattr(w, "ch_" + name)(**args)
+        return cache[key]
+
+    custody = ask("custody")
+    broken, dark, withheld = set(), defaultdict(set), defaultdict(list)
+    for kind, name, detail in re.findall(
+        r"^\s*-\s*(power sensor on feed|optical tap,\s*link)\s+([\w-]+):\s*([^\n]*)",
+        custody, re.M | re.I,
+    ):
+        key = ("power" if kind.lower().startswith("power") else "tap", name)
+        if re.search(r"\bbroken\b", detail, re.I):
+            broken.add(key)
+            notes.append(f"{kind} {name} had a broken seal at closing inspection.")
+        gap = re.search(r"no data on days?\s+([\d,\s–-]+)", detail, re.I)
+        if gap:
+            for lo, hi in re.findall(r"(\d+)(?:\s*[-–]\s*(\d+))?", gap[1]):
+                dark[key].update(day for day in days if int(lo) <= day <= int(hi or lo))
+            missing = ", ".join(map(str, sorted(dark[key])))
+            notes.append(f"{kind} {name} had no data on days {missing}.")
+    for line in custody.splitlines():
+        if ("chip probe" in line.lower() and "nothing withheld" not in line.lower()
+                and re.search(r"withheld|refus|declin", line, re.I)):
+            notes.append(line.strip().lstrip("- "))
+            for cluster, lo, hi in re.findall(
+                r"([\w-]+)-(\d+)\s+to\s+\1-(\d+)", line, re.I
+            ):
+                withheld[cluster].append((int(lo), int(hi)))
+
+    month = {"first_day": 1, "last_day": world.DAYS}
+    scheduler = ask("scheduler_log", **month)
+    escrow = ask("log_escrow")
+    jobs = read_jobs(scheduler, escrow)
+    for job in jobs:
+        size = 24 * job.n * (job.end - job.start)
+        if job.kind != "batch" and size > threshold:
+            return violation(f"Declared {job.kind} job {job.id} used {size:,.0f} GPU-hours.")
+
+    systems = ask("system_list")
+    clusters = read_clusters(systems)
+    inventory = ask("inventory")
+    energy = read_energy(ask("utility_energy", **month))
+    bank = ask("bank_payments")
+    site = re.search(r"system list\s*\(\s*([^,\n)]+)", systems, re.I)
+    operator = site[1].strip().casefold() if site else ""
+    payers = {}
+    for line in bank.splitlines():
+        fields = [field.strip() for field in line.split("|")]
+        if (len(fields) == 4 and re.fullmatch(r"[\d,]+", fields[2])
+                and number(fields[2]) > 0 and not fields[3].startswith("(")):
+            payers[fields[0].casefold()] = fields[3].casefold()
+
+    def operator_paid(customer):
+        payer = payers.get(customer.casefold(), "")
+        return bool(operator and (
+            payer == operator or payer.startswith(operator + " holding ")
+        ))
+
+    shipped = re.search(NUMBER + r"\s+GPUs delivered", inventory, re.I)
+    listed = sum(info.hi - info.lo + 1 for info in clusters.values())
+    missing = max(0, int(number(shipped[1])) - listed) if shipped and clusters else 0
+    mapped = {info.feed for info in clusters.values()}
+    local = {name: [job for job in jobs if job.cluster == name] for name in clusters}
+    by_feed = defaultdict(list)
+    for name, info in clusters.items():
+        by_feed[info.feed].append(name)
+
+    def expected(job, day):
+        increment = BATCH_INCREMENT if job.kind == "batch" else TRAIN_INCREMENT
+        return hours(job, day) * increment / 1000
+
+    residual = {}
+    for feed, names in by_feed.items():
+        feed_jobs = [job for name in names for job in local[name]]
+        corrected = {
+            day: value - sum(expected(job, day) for job in feed_jobs)
+            for day, value in energy.get(feed, {}).items()
+        }
+        floor = sum(clusters[name].hi - clusters[name].lo + 1 for name in names)
+        baseline = quiet_level(corrected.values(), floor * 24 * 0.15 / 1000)
+        residual[feed] = ({day: value - baseline for day, value in corrected.items()}
+                          if baseline is not None else {})
+
+    def usable(kind, name, day):
+        key = (kind, name)
+        return key not in broken and day not in dark[key]
+
+    logged = set()
+
+    def observe(key, message):
+        if key not in logged:
+            notes.append(message)
+            logged.add(key)
+
+    def tap(link, day):
+        if not usable("tap", link, day):
+            return None
+        text = ask("interconnect_tap", link=link, day=day)
+        rate = re.search(r"\babout\s+" + NUMBER + r"\s*(GB|MB|kB)/s\b", text, re.I)
+        if not rate:
+            return None
+        value = number(rate[1]) * {"gb": 1, "mb": 0.001, "kb": 0.000001}[rate[2].lower()]
+        observe(("tap", link, day), f"Tap {link} on day {day} measured {value:g} GB/s.")
+        return value
+
+    def spectrum(feed, day):
+        if not usable("power", feed, day):
+            return ()
+        text = ask("power_spectrum", feed=feed, day=day)
+        frequencies = []
+        for match in re.finditer(r"\bline\s+near\s+" + NUMBER + r"\s*Hz\b([^\n]*)",
+                                 text, re.I):
+            hz = number(match[1])
+            duration = re.search(r"\bfor (?:about )?" + NUMBER + r"\s*hours?\b",
+                                 match[2], re.I)
+            if 0.3 <= hz <= 1.5 and (not duration or number(duration[1]) >= 8):
+                frequencies.append(hz)
+        if frequencies:
+            values = ", ".join(f"{hz:g}" for hz in frequencies)
+            observe(("power", feed, day), f"Feed {feed} on day {day} showed lines at {values} Hz.")
+        return tuple(sorted(frequencies))
+
+    def close_frequency(a, b):
+        return abs(a - b) <= max(0.07, 0.10 * min(a, b))
+
+    def line_evidence(feed, active, controls=(), attempts=3):
+        order = spread(day for day in active if usable("power", feed, day))
+        samples = []
+        control = next((day for day in controls if usable("power", feed, day)), None)
+        background = None
+        for day in order[:attempts]:
+            lines = spectrum(feed, day)
+            if not lines:
+                continue
+            if background is None:
+                background = spectrum(feed, control) if control is not None else ()
+            tracks = [hz for hz in lines if not any(close_frequency(hz, bg)
+                                                     for bg in background)]
+            samples.append((day, tracks))
+            hits = [(a, b) for a, b in itertools.combinations(samples, 2)
+                    if any(close_frequency(x, y) for x in a[1] for y in b[1])]
+            if hits:
+                single = all(len(lines) <= 1 for _, lines in samples)
+                return 2, single
+        return int(any(lines for _, lines in samples)), False
+
+    def tap_evidence(name, active, size_by_day, excluded=(), attempts=3):
+        info = clusters[name]
+        excluded = set(excluded)
+        competitors = [job for job in local[name]
+                       if job.kind != "batch" and job not in excluded]
+        noise = 0.05 + 0.00003 * (info.hi - info.lo + 1)
+        allowance = {
+            day: sum(hours(job, day) for job in competitors) / 24
+            for day in active
+        }
+        order = spread(day for day in active if usable("tap", name, day))
+        order.sort(key=lambda day: allowance[day])
+        positives = tested = 0
+        for day in order[:attempts]:
+            value = tap(name, day)
+            if value is None:
+                continue
+            tested += 1
+            count = size_by_day[day] / 24
+            other = allowance[day]
+            unexplained = value - noise - 1.3 * other
+            if (unexplained >= 0.40 * count or
+                    (other == 0 and unexplained >= max(0.05, 0.003 * count))):
+                positives += 1
+                if positives >= 2:
+                    break
+        return Evidence(positives, tested)
+
+    def cross_evidence(names, active, smaller):
+        link = "-".join(sorted(names))
+        positives = 0
+        for day in spread(d for d in active if usable("tap", link, d))[:2]:
+            rate = tap(link, day)
+            if rate is not None and rate >= max(0.2, 0.002 * smaller(day)):
+                positives += 1
+            else:
+                break
+        return positives == 2
+
+    def probe(name, lo, hi, active, start, end):
+        live = [day for day in active if day > world.DAYS - 5]
+        if not live or hi < lo:
+            return False
+        nodes = list(dict.fromkeys(
+            f"{name}-{lo + (hi - lo) * index // 7:04d}" for index in range(8)
+        ))
+        if all(any(a <= int(node.rsplit("-", 1)[1]) <= b
+                   for a, b in withheld[name]) for node in nodes):
+            return False
+        day = spread(live)[0]
+        midpoint = (max(start, day) + min(end, day + 1)) / 2
+        hour = min(world.HOURS - 1, int(24 * (midpoint - 1)))
+        text = ask("chip_probe", nodes=nodes, hour=hour)
+        marks = defaultdict(set)
+        for line in text.splitlines():
+            mentioned = [node for node in nodes
+                         if re.search(r"(?<![\w-])" + re.escape(node) + r"(?![\w-])", line)]
+            if re.search(r"\b(?:withheld|refus\w*|declin\w*)\b", line, re.I):
+                observe(("refusal", line.strip()), line.strip())
+                continue
+            if len(mentioned) != 1 or re.search(r"\bunavailable\b", line, re.I):
+                continue
+            if re.search(r"\binference\b", line, re.I):
+                marks[mentioned[0]].add("inference")
+            if re.search(r"\btraining\b", line, re.I) and not re.search(
+                r"\bnot\s+training\b", line, re.I
+            ):
+                marks[mentioned[0]].add("training")
+        training = sum(value == {"training"} for value in marks.values())
+        return training >= min(4, len(nodes)) and training >= 0.8 * len(marks)
+
+    def nearby_controls(feed, start, end):
+        readings = residual.get(feed, {})
+        return sorted(
+            (day for day, value in readings.items()
+             if (day + 1 <= start or day >= end) and abs(value) <= 2 * METER_MARGIN
+             and all(hours(job, day) == 0 for name in by_feed[feed] for job in local[name])),
+            key=lambda day: (min(abs(day - start), abs(day - end)), day),
+        )
+
+    def supported_allocation(name, parts, start, end):
+        feed = clusters[name].feed
+        readings = residual[feed]
+        daily, increments, clean = {}, [], []
+        count = sum(job.n for job in parts)
+        for day, extra in readings.items():
+            nominal = 24 * count * overlap(start, end, day)
+            if nominal <= 0:
+                continue
+            available = extra + sum(expected(job, day) for job in parts)
+            rate = 1000 * available / nominal
+            if available + METER_MARGIN < nominal * 0.48 / 1000:
+                continue
+            if available - METER_MARGIN > nominal * 0.86 / 1000:
+                continue
+            daily[day] = nominal
+            if overlap(start, end, day) == 1:
+                increments.append(rate)
+                if not any(job not in parts and hours(job, day) > 0
+                           for other in by_feed[feed] for job in local[other]):
+                    clean.append(day)
+        return daily, clean, increments
+
+    candidates = []
+    blocks = defaultdict(list)
+    for name, info in clusters.items():
+        if len(by_feed[info.feed]) == 1:
+            capacity = info.hi - info.lo + 1
+            blocks[name].extend(load_blocks(name, info.feed, residual[info.feed], capacity))
+            for load in blocks[name]:
+                if load.size > threshold:
+                    candidates.append((load.size, "excess", load))
+
+    if missing:
+        notes.append(f"Manufacturer shipments exceed listed capacity by {missing:,} GPUs.")
+        for feed in sorted(set(energy) - mapped):
+            readings = energy[feed]
+            baseline = quiet_level(readings.values(), 0)
+            if baseline is None:
+                continue
+            excess = {day: value - baseline for day, value in readings.items()}
+            for load in load_blocks(feed, feed, excess, missing):
+                if load.size > threshold:
+                    candidates.append((1.4 * load.size, "unmapped", (load, excess)))
+
+    for a, b in itertools.combinations(sorted(blocks), 2):
+        for first, second in itertools.product(blocks[a], blocks[b]):
+            shared = sorted(set(first.hours) & set(second.hours))
+            core = sorted(set(first.core) & set(second.core))
+            size = sum(first.hours[d] + second.hours[d] for d in shared)
+            if len(core) >= 2 and size > threshold:
+                candidates.append((size, "linked", (first, second, shared, core, size)))
+
+    mapped_jobs = [job for job in jobs if job.cluster in clusters]
+    groups = itertools.chain(
+        ([job] for job in mapped_jobs if job.kind == "batch"),
+        allocation_groups(mapped_jobs),
+    )
+    for parts in groups:
+        start = max(job.start for job in parts)
+        end = min(job.end for job in parts)
+        size = 24 * sum(job.n for job in parts) * max(0, end - start)
+        if size > threshold:
+            candidates.append((size, "allocation", (parts, start, end, size)))
+
+    for _, kind, data in sorted(candidates, key=lambda candidate: -candidate[0]):
+        if kind == "unmapped":
+            load, excess = data
+            active = list(load.hours)
+            controls = sorted((day for day, value in excess.items()
+                               if abs(value) <= 2 * METER_MARGIN),
+                              key=lambda day: min(abs(day - active[0]), abs(day - active[-1])))
+            repeat, _ = line_evidence(load.feed, load.core, controls, attempts=4)
+            if repeat == 2:
+                return violation(
+                    f"Unlisted shipment capacity and recurring power lines on {load.feed} "
+                    f"corroborate a sustained load equivalent to {load.size:,.0f} training GPU-hours."
+                )
+            plateau = statistics.median(excess[d] for d in load.core)
+            equivalent_increment = 1000 * plateau / (24 * load.capacity)
+            steady = sum(abs(excess[d] - plateau) <= max(0.25, 0.10 * plateau)
+                         for d in active)
+            clear_edge = any(abs(excess.get(d, plateau)) <= 2 * METER_MARGIN
+                             for d in (active[0] - 1, active[-1] + 1))
+            if ((("power", load.feed) in broken or repeat == 1)
+                    and 0.50 <= equivalent_increment <= 0.85
+                    and steady >= max(8, 0.80 * len(active))
+                    and clear_edge and len(controls) >= 3 and load.size > 1.5 * threshold):
+                return violation(
+                    f"Unlisted shipment capacity matches a sustained load step on {load.feed} "
+                    f"equivalent to {load.size:,.0f} training GPU-hours. "
+                    "Spectral coverage was limited."
+                )
+
+        elif kind == "linked":
+            first, second, shared, core, size = data
+            names = (first.name, second.name)
+            if cross_evidence(names, core, lambda d: min(first.hours[d], second.hours[d]) / 24):
+                return violation(
+                    f"Repeated cross-cluster GPU traffic links concurrent undeclared load "
+                    f"equivalent to {size:,.0f} training GPU-hours."
+                )
+            # Require common load edges and repeat training traffic on both sides
+            # when the direct coordination measurement is unavailable or quiet.
+            aligned = (min(first.hours) == min(second.hours)
+                       and max(first.hours) == max(second.hours))
+            if not aligned or len(core) < 3:
+                continue
+            levels = [statistics.median(load.hours[d] for d in core)
+                      for load in (first, second)]
+            differences = [
+                abs(first.hours[d] / levels[0] - second.hours[d] / levels[1])
+                for d in shared
+            ]
+            if max(differences) > 0.35:
+                continue
+            a = tap_evidence(first.name, core, first.hours, attempts=2)
+            b = tap_evidence(second.name, core, second.hours, attempts=2) if a.positive == 2 else None
+            if b and b.positive == 2:
+                return violation(
+                    f"Matching load onsets and shutdowns with repeated training traffic "
+                    f"on both clusters support a coordinated run of about {size:,.0f} GPU-hours."
+                )
+
+        elif kind == "excess":
+            load = data
+            result = tap_evidence(load.name, load.core, load.hours)
+            if result.positive == 2:
+                return violation(
+                    f"Repeated unexplained GPU traffic accompanies sustained undeclared load "
+                    f"equivalent to {load.size:,.0f} training GPU-hours on {load.name}."
+                )
+            start, end = min(load.hours), max(load.hours) + 1
+            clean = [day for day in load.core
+                     if all(hours(job, day) == 0 for job in local[load.name])]
+            clean_size = sum(load.hours[day] for day in load.hours
+                             if all(hours(job, day) == 0 for job in local[load.name]))
+            if clean_size <= threshold:
+                continue
+            info = clusters[load.name]
+            median_gpus = statistics.median(load.hours[d] for d in load.core) / 24
+            lo = max(info.lo, info.pool_end + 1)
+            hi = min(info.hi, lo + max(0, round(median_gpus) - 1))
+            if probe(load.name, lo, hi, clean, start, end):
+                return violation(
+                    f"Live chip samples identify training during an undeclared load "
+                    f"equivalent to {clean_size:,.0f} training GPU-hours on {load.name}."
+                )
+            controls = nearby_controls(load.feed, start, end)
+            if controls and (result.positive or clean_size > 1.20 * threshold):
+                repeat, single = line_evidence(load.feed, clean, controls)
+                if repeat == 2 and single:
+                    return violation(
+                        f"A recurring power line tracks sustained load outside declared work "
+                        f"on {load.name}, equivalent to {clean_size:,.0f} training GPU-hours."
+                    )
+
+        else:
+            parts, start, end, size = data
+            groups = {name: [job for job in parts if job.cluster == name]
+                      for name in sorted({job.cluster for job in parts})}
+            support = {name: supported_allocation(name, group, start, end)
+                       for name, group in groups.items()}
+            covered = sum(sum(item[0].values()) for item in support.values())
+            if covered <= threshold or covered < 0.65 * size:
+                continue
+            full = [day for day in days if overlap(start, end, day) == 1
+                    and all(day in item[0] for item in support.values())]
+            if not full:
+                continue
+            customers = {job.customer.casefold() for job in parts}
+            same_customer = len(customers) == 1
+            internal = customers == {"internal"}
+            operator_funded = all(operator_paid(job.customer) for job in parts)
+            exact_edges = (len({job.start for job in parts}) == 1
+                           and len({job.end for job in parts}) == 1)
+            counts = [job.n for job in parts]
+            balanced = max(counts) - min(counts) <= max(2, 0.16 * min(counts))
+            batch = parts[0].kind == "batch"
+
+            if len(groups) == 2 and cross_evidence(
+                tuple(groups), full, lambda d: min(item[0][d] / 24 for item in support.values())
+            ):
+                return violation(
+                    f"Repeated cross-cluster GPU traffic links synchronized allocations "
+                    f"with {covered:,.0f} GPU-hours supported by the meters."
+                )
+            if len(groups) == 2 and not (batch and exact_edges and
+                                         (same_customer or operator_funded)):
+                continue
+
+            network = {}
+            for name, group in groups.items():
+                daily, _, _ = support[name]
+                network[name] = tap_evidence(name, full, daily, group, attempts=2)
+
+            if batch and len(parts) == 1 and next(iter(network.values())).positive == 2:
+                return violation(
+                    f"Repeated GPU traffic attributable to batch-labeled job {parts[0].id} "
+                    f"supports training over {covered:,.0f} GPU-hours."
+                )
+            if (not batch and exact_edges and balanced and len(parts) >= 4
+                    and operator_funded and any(e.positive == 2 for e in network.values())):
+                return violation(
+                    f"Operator-funded rack partitions share allocation boundaries and sustained "
+                    f"training traffic across {covered:,.0f} GPU-hours."
+                )
+
+            modes = {}
+            tracks = {}
+            for name, group in groups.items():
+                info = clusters[name]
+                _, clean, increments = support[name]
+                lo, hi = min(job.lo for job in group), max(job.hi for job in group)
+                live = batch and probe(name, lo, hi, full, start, end)
+                if live or (batch and network[name].positive == 2):
+                    modes[name] = "direct"
+                    continue
+                controls = nearby_controls(info.feed, start, end)
+                repeat, single = line_evidence(info.feed, clean, controls, attempts=4)
+                tracks[name] = repeat, single
+                uplift = statistics.median(increments) if increments else 0
+                refused = any(a <= lo and hi <= b for a, b in withheld[name])
+                degraded = ("tap", name) in broken
+                if (batch and controls and uplift >= 0.63 and (
+                    (repeat == 2 and (internal or operator_funded or refused
+                                      or network[name].positive or len(groups) == 2))
+                    or (repeat == 1 and internal and covered > 1.5 * threshold
+                        and uplift >= 0.64)
+                )):
+                    modes[name] = "spectral"
+                if (batch and repeat == 2 and controls and degraded and refused
+                        and covered > 1.5 * threshold):
+                    modes[name] = "spectral"
+
+            if batch and len(parts) == 1 and modes:
+                return violation(
+                    f"Verifier measurements corroborate training in batch-labeled job "
+                    f"{parts[0].id} during {covered:,.0f} meter-supported GPU-hours."
+                )
+            if (batch and len(groups) == 2 and len(modes) == 2
+                    and "direct" in modes.values() and end - start >= 4
+                    and (internal or operator_funded or same_customer)):
+                return violation(
+                    f"Both synchronized partitions of the same batch allocation show training "
+                    f"evidence across {covered:,.0f} GPU-hours."
+                )
+            if not batch and len(groups) == 1 and exact_edges and balanced:
+                name = next(iter(groups))
+                recurrence, single = tracks.get(name, (0, False))
+                strong_partition = (operator_funded or
+                                    (end - start >= 7 and covered > 1.3 * threshold))
+                if strong_partition and recurrence == 2 and single:
+                    return violation(
+                        f"Synchronized rack partitions and a single recurring power line "
+                        f"support a run of {covered:,.0f} GPU-hours on {name}."
+                    )
+
+    # A month-long plateau can be absorbed into the quiet-level estimate.
+    # Require enough measured traffic to size it at ordinary training rates.
+    for name, info in clusters.items():
+        readings = energy.get(info.feed, {})
+        eligible = [day for day in days if day in readings and usable("tap", name, day)
+                    and not any(hours(job, day) for job in local[name])]
+        for interval in sorted(stretches({d: 1 for d in eligible}), key=len, reverse=True):
+            if len(interval) * (info.hi - info.lo + 1) * 24 <= threshold:
+                continue
+            meter = [readings[d] for d in interval]
+            if max(meter) - min(meter) > max(0.45, 0.12 * statistics.median(meter)):
+                continue
+            samples = []
+            for day in spread(interval)[:3]:
+                rate = tap(name, day)
+                if rate is None or rate < 1:
+                    break
+                samples.append(rate)
+            if len(samples) == 3 and max(samples) <= 1.65 * min(samples):
+                capacity = info.hi - info.lo + 1
+                floor = 0.15 * capacity * 24 / 1000
+                count = min(capacity, (min(samples) - 0.05) / 1.3,
+                            max(0, min(meter) - floor) * 1000 / (24 * HIGH_INCREMENT))
+                size = len(interval) * 24 * count
+                if size > threshold:
+                    return violation(
+                        f"Steady meter load and sustained unexplained GPU traffic on {name} "
+                        f"support at least {size:,.0f} estimated training GPU-hours."
+                    )
+
+    return finish(
+        "NO_VIOLATION",
+        "The available evidence did not establish a coordinated run over the limit.",
+    )
+```

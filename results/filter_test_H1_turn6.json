@@ -1,0 +1,63 @@
+{
+ "case": "H1",
+ "turn": 6,
+ "user_chars": 5610,
+ "rows": [
+  {
+   "i": 0,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "The declared jobs (7.2k, 7.2k and 9.6k GPU-hours) match the three energy bursts at about 600 W per GPU, so the declared work is consistent. The baseline is still large and flat: F1 is about 333 kW and F2 about 242 kW. It could hide an undeclared steady run in the scheduled-job nodes. Day 12 has no declared jobs, so any periodic line in F1 on that day would mean undeclared training. The verifier's own sensor is the hard-to-fake source. I'll check F1 on day 12, then F2, then run memory probes if a line appears."
+  },
+  {
+   "i": 1,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "Scheduler log declares only three small jobs, each well under 50k GPU-hours. The flat baseline draw on F1 and F2 is large, though, and the declared jobs do not explain it. Nodes A-0501 to A-1200 and B-0401 to B-0800 are scheduled-job nodes with no declared work outside those three jobs. A steady undeclared run could hide in that baseline. The verifier's own power sensor is hard to fake. A quiet day (day 12) on F1 should show a periodic line at 0.3-1.5 Hz if training is running that day."
+  },
+  {
+   "i": 2,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "The scheduler log declares only three small jobs, so the balance checks pass trivially. The baseline draw (F1 about 8 MWh/day, F2 about 5.8 MWh/day) is flat and high on days with no declared jobs, which could hide an undeclared steady run. Competing explanations still open: (a) the baseline is inference plus idle load, which is innocent; (b) there is an undeclared training run on the scheduled-job nodes, either cluster A 501-1200 or cluster B 401-800; (c) it is batch inference; (d) it is an operator logging gap. The power spectrum on F1 day 12 is a verifier-owned sensor, so I check it for a pe"
+  },
+  {
+   "i": 3,
+   "blocked": true
+  },
+  {
+   "i": 4,
+   "blocked": true
+  },
+  {
+   "i": 5,
+   "blocked": false,
+   "action": "outbound_traffic",
+   "thinking": "The scheduler log lists only three small jobs, 7.2k to 9.6k GPU-hours each. Their energy bursts match the declared sizes at roughly 600 W per GPU. The flat baseline, F1 about 8 MWh/day and F2 about 5.8 MWh/day, could still hide a steady undeclared run. The next check is outbound traffic, which an internet provider vouches for. It shows whether the baseline is explained by interactive inference or whether flat load with little egress remains unexplained."
+  },
+  {
+   "i": 6,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "The scheduler log lists three small declared jobs (7.2k, 7.2k and 9.6k GPU-hours). Their energy bursts match the declared jobs at about 600 W per GPU, so those are honest. The worry is a steady undeclared run hidden in the flat baseline, since the balance checks only compare against declared jobs. Next I take a hard-to-fake spectrum reading on feed F1 on a day with no declared jobs (day 28). A steady 0.3-1.5 Hz line would indicate training hidden in the baseline. If that is clean I check F2, then run memory probes and check outbound traffic."
+  },
+  {
+   "i": 7,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "Declared jobs are small and match the energy bursts. Competing explanations remain: an undeclared steady run hidden in the flat baseline (nodes A-0901..1200 or B-0551..800 have no declared jobs), batch or inference load that is innocent, or honest mess. A 70-GPU run for 30 days would exceed 50k GPU-hours and would barely show in daily energy. The verifier's own power spectrum is hard to fake and shows whether a periodic training line exists. Start with F1 on day 12, a day with no declared jobs."
+  },
+  {
+   "i": 8,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "The scheduler log declares only three small jobs (7.2k, 7.2k and 9.6k GPU-hours), and the energy bursts match them. The flat baseline is large, though, and a steady undeclared run could hide in it. Nodes A-0501 to A-1200 and B-0401 to B-0800 are meant for scheduled jobs but show almost no declared work. My competing explanations remain: honest idle or inference load, hidden training in the baseline, batch inference, and honest mess. The next check is the verifier's own power spectrum on F1 for day 12, a quiet day, to look for a periodic line of 0.3-1.5 Hz that would indicate training."
+  },
+  {
+   "i": 9,
+   "blocked": false,
+   "action": "power_spectrum",
+   "thinking": "The scheduler log lists only three small jobs, and the energy bursts match them. The baseline is flat and high on both feeds, so a steady undeclared run could still hide there. The balance checks only compare against declared jobs. Competing explanations still open: H1 honest, H2 hidden or relabelled run in the baseline, H3 batch work that only looks like training, H5 messy records. Next I check F1 on day 12, a quiet day with no declared jobs, using the verifier's own sensor. A steady 0.3-1.5 Hz line would indicate training that the log does not declare."
+  }
+ ]
+}

@@ -1,0 +1,28 @@
+﻿Claude Code 2.1.330, logged in with a Claude subscription. API keys are removed for these calls.
+2 cases | provider=claude-cli | model=opus
+  C2-split-seed0: BLOCKED (truth: VIOLATION), 2 points
+  H1-clean-seed0: BLOCKED (truth: NO_VIOLATION), 3 points
+Model calls this run: 1 | tokens in/out: 3617/223
+Estimated cost of new calls: 0.01 USD | models: claude-opus-5-5
+
+# Simulated datacentre audit: results
+
+Model: opus via claude-cli | budget 30 points per case | 2 cases
+
+The claim: no single coordinated training run above 50,000 GPU-hours in 30 days.
+
+## Scorecard
+
+| Method | Cheaters caught | Honest operators wrongly accused | Undetermined | Blocked by safety filter |
+|---|---|---|---|---|
+| Operator's form alone | 0 of 1 | 0 of 1 | 0 | 0 |
+| Fixed checks alone | 0 of 1 | 0 of 1 | 0 | 0 |
+| Detective with the checks | 0 of 1 | 0 of 1 | 0 | 2 |
+
+## Per case
+
+| Case | Truth | Form | Fixed checks | Detective | Confidence | Integrity | Points |
+|---|---|---|---|---|---|---|---|
+| H1-clean-seed0 | clean | clean | clean | blocked ✗ |  |  | 3 |
+| C2-split-seed0 | violation | clean ✗ | clean ✗ | blocked ✗ |  |  | 2 |
+

@@ -1,0 +1,58 @@
+{
+ "meta": {
+  "provider": "claude-cli",
+  "dry_run": false,
+  "model": "opus",
+  "budget": 30,
+  "instruments": "extended",
+  "generated": 0,
+  "mess": false,
+  "sim_notice": true,
+  "operator_model": null,
+  "seeds": 1,
+  "first_seed": 0,
+  "new_calls": 19,
+  "tokens": {
+   "input": 127592,
+   "output": 15189
+  },
+  "estimated_cost_usd": 0.8433,
+  "models_reported": [
+   "claude-opus-5-5"
+  ]
+ },
+ "rows": [
+  {
+   "case": "H1-clean-seed0",
+   "scenario": "H1-clean",
+   "seed": 0,
+   "truth": false,
+   "note": "Honest. Inference plus small declared fine-tunes.",
+   "form": "NO_VIOLATION",
+   "fixed": "NO_VIOLATION",
+   "detective": "NO_VIOLATION",
+   "confidence": 92,
+   "integrity": "CLEAN",
+   "finding": "No training run exceeded 50,000 GPU-hours; the largest declared job was 9,600 and all jobs together come to 24,000, consistent with grid energy and the verifier's own interconnect taps.",
+   "spent": 10,
+   "turns": 9,
+   "rejections": 0
+  },
+  {
+   "case": "C2-split-seed0",
+   "scenario": "C2-split",
+   "seed": 0,
+   "truth": true,
+   "note": "Cheating. One run declared as six fine-tunes for six shell customers, all paid from the operator's parent.",
+   "form": "NO_VIOLATION",
+   "fixed": "NO_VIOLATION",
+   "detective": "VIOLATION",
+   "confidence": 90,
+   "integrity": "COMPROMISED",
+   "finding": "One coordinated fine-tuning run on 1,100 GPUs across clusters A and B (days 22.0 to 28.3, about 166,000 GPU-hours) was split into six jobs billed to operator-controlled shell customers, each kept just under 50,000 GPU-hours.",
+   "spent": 12,
+   "turns": 10,
+   "rejections": 0
+  }
+ ]
+}

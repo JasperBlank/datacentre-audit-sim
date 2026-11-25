@@ -1,0 +1,35 @@
+﻿Claude Code 2.1.330, logged in with a Claude subscription. API keys are removed for these calls.
+python : H1 ended before turn 6.
+At line:1 char:376
++ ... th; cd C:\SPB_Data\dc-sim; python test_filter.py H1 6 10 2>&1 | Tee-O ...
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (H1 ended before turn 6.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Claude Code 2.1.330, logged in with a Claude subscription. API keys are removed for these calls.
+C2 turn 6: 0 of 10 rejected | cost 0.07 USD
+   0 power_spectrum
+   1 power_spectrum
+   2 power_spectrum
+   3 power_spectrum
+   4 power_spectrum
+   5 power_spectrum
+   6 power_spectrum
+   7 power_spectrum
+   8 power_spectrum
+   9 power_spectrum
+Claude Code 2.1.330, logged in with a Claude subscription. API keys are removed for these calls.
+H1 turn 6: 2 of 10 rejected | cost 0.09 USD
+   0 power_spectrum
+   1 power_spectrum
+   2 power_spectrum
+   3 REJECTED
+   4 REJECTED
+   5 outbound_traffic
+   6 power_spectrum
+   7 power_spectrum
+   8 power_spectrum
+   9 power_spectrum
+H1 turn 6: 0 of 20 rejected | cost 0.20 USD
+   0 power_spectrum
+H1 turn 6: 0 of 20 rejected | cost 0.25 USD

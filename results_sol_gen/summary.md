@@ -1,0 +1,45 @@
+# Simulated datacentre audit: results
+
+Model: gpt-6.2-sol via codex-cli | budget 30 points per case | 10 cases | extended instruments
+
+The claim: no single coordinated training run above 50,000 GPU-hours in 30 days.
+
+## Scorecard
+
+| Method | Cheaters caught | Honest operators wrongly accused | Undetermined | Blocked by safety filter |
+|---|---|---|---|---|
+| Operator's form alone | 0 of 5 | 0 of 5 | 0 | 0 |
+| Fixed checks alone | 4 of 5 | 3 of 5 | 0 | 0 |
+| Detective with the checks | 2 of 5 | 0 of 5 | 3 | 0 |
+
+## Per case
+
+| Case | Truth | Form | Fixed checks | Detective | Confidence | Integrity | Points | Filter rejections |
+|---|---|---|---|---|---|---|---|---|
+| G0000-seed0 | violation | clean ✗ | violation | undetermined ✗ | 75 | LIMITED | 29 | 0 |
+| G0001-seed0 | clean | clean | violation ✗ | clean | 93 | CLEAN | 18 | 0 |
+| G0002-seed0 | violation | clean ✗ | clean ✗ | violation | 85 | COMPROMISED | 29 | 0 |
+| G0003-seed0 | violation | clean ✗ | violation | violation | 86 | CLEAN | 30 | 0 |
+| G0004-seed0 | violation | clean ✗ | violation | undetermined ✗ | 65 | LIMITED | 29 | 0 |
+| G0005-seed0 | clean | clean | clean | clean | 88 | CLEAN | 29 | 0 |
+| G0006-seed0 | clean | clean | violation ✗ | clean | 90 | LIMITED | 21 | 0 |
+| G0007-seed0 | violation | clean ✗ | violation | clean ✗ | 82 | COMPROMISED | 30 | 0 |
+| G0008-seed0 | clean | clean | clean | clean | 90 | COMPROMISED | 30 | 0 |
+| G0009-seed0 | clean | clean | violation ✗ | undetermined ✗ | 70 | LIMITED | 29 | 0 |
+
+✗ marks a wrong, undetermined or blocked answer.
+
+## What each case was
+
+- **G0000-seed0:** Cheating: hidden-cluster, plain line, ends before the audit window, late payer. Detective's finding: F3 carried a sustained, partly periodic load whose source remains unverified, so the audit could not establish whether a single training run exceeded 50,000 GPU-hours.
+- **G0001-seed0:** Honest: big-batch. Detective's finding: The 88,688 GPU-hour Calloway Maps job was most likely batch inference. No coordinated training run was found above 50,000 GPU-hours.
+- **G0002-seed0:** Cheating: relabel-shell, plain line, runs into the audit window, instrument outage, blinded tap A, withholds chips. Detective's finding: The workload billed to Quillon Tech on cluster A was likely one coordinated training run that exceeded 50,000 GPU-hours.
+- **G0003-seed0:** Cheating: relabel-internal, plain line, runs into the audit window, late payer, blinded tap B without breaking the seal. Detective's finding: The evidence favors one coordinated training run on Cluster A exceeding 50,000 GPU-hours.
+- **G0004-seed0:** Cheating: hidden-cluster, plain line, ends before the audit window. Detective's finding: F3 drew enough unexplained energy to support a run above 50,000 GPU-hours, but the workload and its coordination could not be established.
+- **G0005-seed0:** Honest: plain. Detective's finding: The evidence favors Borealis Compute’s claim that no coordinated training run exceeded 50,000 GPU-hours.
+- **G0006-seed0:** Honest: same-frequency, lost logs, chips in maintenance. Detective's finding: The evidence favors separate fine-tunes of 35,340 and 26,600 GPU-hours and supports no coordinated run above 50,000 GPU-hours.
+- **G0007-seed0:** Cheating: relabel-internal, plain line, ends before the audit window, lost logs, instrument outage, blinded tap A. Detective's finding: The evidence favors no coordinated training run above 50,000 GPU-hours.
+- **G0008-seed0:** Honest: same-frequency, seal broken by accident. Detective's finding: The evidence supports Borealis Compute’s claim that no coordinated training run exceeded 50,000 GPU-hours.
+- **G0009-seed0:** Honest: plain, late payer. Detective's finding: Unexplained GPU traffic on cluster B leaves the 50,000 GPU-hour claim unresolved.
+
+Full transcripts are in the `cases` folder next to this file.

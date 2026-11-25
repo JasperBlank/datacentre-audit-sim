@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+# private: outreach drafts and addresses
+outreach/
+# third-party data (CC-BY-4.0, download it yourself: see README)
+real_traces/
+reproduce.log
+HANDOVER.md
+resume_terra_luna.ps1
+resume_status.txt

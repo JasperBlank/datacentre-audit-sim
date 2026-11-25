@@ -1,0 +1,18 @@
+﻿Codex CLI 0.171.0, logged in with ChatGPT. API keys are removed for these calls.
+26 cases | provider=codex-cli | model=gpt-6.1-terra
+  H4-three-finetunes-seed1: UNDETERMINED (truth: NO_VIOLATION), 15 points
+  H3-big-batch-seed1: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  H2-messy-seed1: UNDETERMINED (truth: NO_VIOLATION), 15 points
+  H1-clean-seed1: UNDETERMINED (truth: NO_VIOLATION), 30 points
+  C3-paused-seed1: UNDETERMINED (truth: VIOLATION), 15 points
+  C1-relabelled-seed1: VIOLATION (truth: VIOLATION), 20 points
+Replies thrown away because the model used a tool, up to the stop: 0
+python : ChatGPT usage limit reached: {"type": "turn.failed", "error": {"message": "You\u2019ve hit your usage limit. 
+Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or 
+try again at Nov 24th, 2026 1:33 AM."}}
+At line:1 char:335
++ ... ata\dc-sim; python run.py --provider codex-cli --model gpt-6.1-terra  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ChatGPT usage l...026 1:33 AM."}}:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

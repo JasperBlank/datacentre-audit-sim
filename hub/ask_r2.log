@@ -1,0 +1,3 @@
+hub\prompt_r2.txt: 131178 characters, 37 wrong sites shown
+Codex CLI 0.171.0, logged in with ChatGPT. API keys are removed for these calls.
+Wrote hub\script_r2.py (715 lines). Read it, then: python hub.py score hub\script_r2.py

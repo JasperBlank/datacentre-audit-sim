@@ -1,0 +1,42 @@
+
+Share of batch inference jobs that are periodic (default 0.5)
+| Value | Sensor rule: caught, accused | Tap rule: caught, accused | Script: caught, accused | Script, messy sites: caught, accused |
+|---|---|---|---|---|
+| 0.0 | 91 of 108, 24 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.2 | 91 of 108, 28 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.5 (default) | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.8 | 91 of 108, 42 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 1.0 | 91 of 108, 42 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+
+Day-to-day wander of the line's frequency (Hz) (default 0.04)
+| Value | Sensor rule: caught, accused | Tap rule: caught, accused | Script: caught, accused | Script, messy sites: caught, accused |
+|---|---|---|---|---|
+| 0.0 | 91 of 108, 35 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.02 | 91 of 108, 35 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.04 (default) | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.08 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.15 | 87 of 108, 31 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+
+Error of the traffic tap's estimate (share) (default 0.3)
+| Value | Sensor rule: caught, accused | Tap rule: caught, accused | Script: caught, accused | Script, messy sites: caught, accused |
+|---|---|---|---|---|
+| 0.0 | 91 of 108, 36 of 92 | 41 of 108, 5 of 92 | 104 of 108, 0 of 92 | 97 of 108, 6 of 92 |
+| 0.15 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.3 (default) | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.6 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 7 of 92 |
+
+Traffic of a low-communication run, against normal training (default 0.01)
+| Value | Sensor rule: caught, accused | Tap rule: caught, accused | Script: caught, accused | Script, messy sites: caught, accused |
+|---|---|---|---|---|
+| 0.001 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 92 of 108, 0 of 92 | 88 of 108, 6 of 92 |
+| 0.01 (default) | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.05 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.2 | 91 of 108, 36 of 92 | 52 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+
+Days on which a hidden run's line is still found (default 0.87)
+| Value | Sensor rule: caught, accused | Tap rule: caught, accused | Script: caught, accused | Script, messy sites: caught, accused |
+|---|---|---|---|---|
+| 0.5 | 89 of 108, 36 of 92 | 41 of 108, 6 of 92 | 102 of 108, 0 of 92 | 97 of 108, 6 of 92 |
+| 0.7 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 103 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.87 (default) | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |
+| 0.95 | 91 of 108, 36 of 92 | 41 of 108, 6 of 92 | 104 of 108, 0 of 92 | 98 of 108, 6 of 92 |

@@ -1,0 +1,20 @@
+﻿Codex CLI 0.171.0, logged in with ChatGPT. API keys are removed for these calls.
+13 cases | provider=codex-cli | model=gpt-6.2-sol
+  H4-three-finetunes-seed0: NO_VIOLATION (truth: NO_VIOLATION), 19 points
+  H3-big-batch-seed0: UNDETERMINED (truth: NO_VIOLATION), 25 points
+  H1-clean-seed0: UNDETERMINED (truth: NO_VIOLATION), 30 points
+  H2-messy-seed0: UNDETERMINED (truth: NO_VIOLATION), 30 points
+  C1-relabelled-seed0: UNDETERMINED (truth: VIOLATION), 26 points
+  C2-split-seed0: UNDETERMINED (truth: VIOLATION), 30 points
+  C3-paused-seed0: UNDETERMINED (truth: VIOLATION), 28 points
+  C4-hidden-cluster-seed0: UNDETERMINED (truth: VIOLATION), 29 points
+  E1-no-line-relabelled-seed0: UNDETERMINED (truth: VIOLATION), 27 points
+  E2-no-line-paused-seed0: UNDETERMINED (truth: VIOLATION), 21 points
+  E3-internal-batch-seed0: UNDETERMINED (truth: NO_VIOLATION), 28 points
+python : Stopped: 201 calls, the limit --max-cost 10 allows (20 calls per unit).
+At line:1 char:335
++ ... ata\dc-sim; python run.py --provider codex-cli --instruments extended ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Stopped: 201 ca...alls per unit).:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

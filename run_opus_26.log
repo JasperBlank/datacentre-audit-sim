@@ -1,0 +1,33 @@
+﻿Claude Code 2.1.330, logged in with a Claude subscription. API keys are removed for these calls.
+26 cases | provider=claude-cli | model=opus
+  H1-clean-seed1: NO_VIOLATION (truth: NO_VIOLATION), 16 points
+  H3-big-batch-seed1: NO_VIOLATION (truth: NO_VIOLATION), 17 points
+  H4-three-finetunes-seed1: NO_VIOLATION (truth: NO_VIOLATION), 14 points
+  H2-messy-seed1: NO_VIOLATION (truth: NO_VIOLATION), 19 points
+  C3-paused-seed1: BLOCKED (truth: VIOLATION), 3 points
+  C1-relabelled-seed1: VIOLATION (truth: VIOLATION), 10 points
+  C4-hidden-cluster-seed1: BLOCKED (truth: VIOLATION), 3 points
+  E1-no-line-relabelled-seed1: BLOCKED (truth: VIOLATION), 3 points
+  C2-split-seed1: VIOLATION (truth: VIOLATION), 10 points
+  E4-same-frequency-seed1: BLOCKED (truth: NO_VIOLATION), 3 points
+  E2-no-line-paused-seed1: VIOLATION (truth: VIOLATION), 14 points
+  E3-internal-batch-seed1: NO_VIOLATION (truth: NO_VIOLATION), 19 points
+  E5-whole-month-seed1: BLOCKED (truth: VIOLATION), 13 points
+  H1-clean-seed2: NO_VIOLATION (truth: NO_VIOLATION), 13 points
+  H2-messy-seed2: NO_VIOLATION (truth: NO_VIOLATION), 16 points
+  C1-relabelled-seed2: VIOLATION (truth: VIOLATION), 9 points
+  H3-big-batch-seed2: NO_VIOLATION (truth: NO_VIOLATION), 15 points
+  C3-paused-seed2: BLOCKED (truth: VIOLATION), 3 points
+  H4-three-finetunes-seed2: NO_VIOLATION (truth: NO_VIOLATION), 19 points
+  C2-split-seed2: VIOLATION (truth: VIOLATION), 14 points
+  E2-no-line-paused-seed2: VIOLATION (truth: VIOLATION), 17 points
+  E1-no-line-relabelled-seed2: VIOLATION (truth: VIOLATION), 15 points
+  C4-hidden-cluster-seed2: VIOLATION (truth: VIOLATION), 15 points
+python : Stopped: estimated cost reached --max-cost 10.00 USD. Rerun with a higher --max-cost to continue; finished 
+calls are cached.
+At line:1 char:386
++ ... ata\dc-sim; python run.py --provider claude-cli --model opus --instru ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Stopped: estima...lls are cached.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
